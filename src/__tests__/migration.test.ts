@@ -15,7 +15,7 @@ describe('IndexedDB schema migration', () => {
 
     const v2 = new MyFinanceDB(name);
     await v2.open();
-    expect(v2.verno).toBe(3);
+    expect(v2.verno).toBe(4);
     expect(await v2.goals.count()).toBe(0);
     expect((await v2.accounts.get('a1'))!.openingBalance).toBe(12345);
     expect((await v2.transactions.get('t1'))!.amount).toBe(999);

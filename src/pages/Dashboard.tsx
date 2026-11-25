@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Info } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useBudgets, useCommitments, useFinance, useGoals, useTasks, type Finance } from '@/hooks/useData';
+import { useBudgets, useCommitments, useFinance, useGoals, useReceipts, useTasks, type Finance } from '@/hooks/useData';
 import { budgetLines, isOverdueTask, reservedForGoals, type GoalView } from '@/domain/planning';
 import { Progress } from '@/components/Progress';
 import type { Budget, Task } from '@/db/types';
@@ -23,7 +23,7 @@ const short = (c: number) => { const v = c / 100; return Math.abs(v) >= 1000 ? `
 const tip = { contentStyle: { borderRadius: 8, fontSize: 12 }, formatter: (v: number) => rm(v) };
 
 export default function Dashboard() {
-  const f = useFinance(); const cm = useCommitments(); const goals = useGoals(); const budgets = useBudgets(); const tasks = useTasks(); const t = useT(); const { openTxn, openAccount } = useUI();
+  const f = useFinance(); const cm = useCommitments(); const goals = useGoals(); const budgets = useBudgets(); const tasks = useTasks(); const receipts = useReceipts(); const t = useT(); const { openTxn, openAccount } = useUI();
   const today = todayKL();
   const [period, setPeriod] = useState<'this' | 'last' | 'custom'>('this');
   const [custom, setCustom] = useState({ from: monthStart(today), to: today });
@@ -82,6 +82,8 @@ export default function Dashboard() {
         <Stat label="Needs / Wants" value={`${pct(s.needs, s.needs + s.wants)} / ${pct(s.wants, s.needs + s.wants)}`} sub={`${rm(s.needs)} / ${rm(s.wants)}`} />
       </div>
 
+      {(() => { const pend = receipts?.filter((r) => ['review', 'draft', 'duplicate', 'failed', 'processing'].includes(r.status)).length ?? 0;
+        return pend > 0 ? <Link to="/scan" className="mt-3 flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-200"><span>{pend} receipt(s) waiting for review</span><span className="font-medium">Review →</span></Link> : null; })()}
       {cm.commitments.length > 0 && <Link to="/commitments" className="mt-3 grid grid-cols-3 gap-3">
         <Stat label="Commitments paid" value={rm(occ.paid)} tone="green" sub={`${occ.counts.paid} of ${occ.counts.paid + occ.counts.partial + occ.counts.pending + occ.counts.upcoming + occ.counts.overdue} this month`} />
         <Stat label="Pending" value={rm(occ.pending)} tone="blue" sub={`${occ.counts.pending + occ.counts.upcoming + occ.counts.partial} item(s)`} />

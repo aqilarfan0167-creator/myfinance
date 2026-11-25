@@ -1,13 +1,13 @@
 import Dexie, { type Table } from 'dexie';
-import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task } from './types';
+import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task, Attachment, StoredFile, Receipt } from './types';
 import { defaultCategories } from './seed';
 
-export const APP_VERSION = '0.3.0';
+export const APP_VERSION = '0.4.0';
 /**
  * Schema history. NEVER edit or remove a past version; only append new ones.
  * Dexie upgrades are non-destructive: existing rows are preserved.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export class MyFinanceDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -25,6 +25,9 @@ export class MyFinanceDB extends Dexie {
   goals!: Table<Goal, string>;
   goalEntries!: Table<GoalEntry, string>;
   tasks!: Table<Task, string>;
+  attachments!: Table<Attachment, string>;
+  files!: Table<StoredFile, string>;
+  receipts!: Table<Receipt, string>;
 
   constructor(name = 'myfinance') {
     super(name);
@@ -54,6 +57,12 @@ export class MyFinanceDB extends Dexie {
       goalEntries: 'id, goalId, date, txnId',
       tasks: 'id, dueDate, status, seriesId, updatedAt',
     }).upgrade(async (tx) => { await tx.table('meta').put({ key: 'schemaVersion', value: 3 }); });
+    // v4 (Phase 4): additive only.
+    this.version(4).stores({
+      attachments: 'id, kind, hash, updatedAt',
+      files: 'id',
+      receipts: 'id, attachmentId, status, date, merchant, receiptNo, updatedAt',
+    }).upgrade(async (tx) => { await tx.table('meta').put({ key: 'schemaVersion', value: 4 }); });
     this.on('populate', async (tx) => {
       await tx.table('categories').bulkAdd(defaultCategories());
       await tx.table('settings').add(defaultSettings());

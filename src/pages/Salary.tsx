@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Plus, Trash2, Calculator, CheckCircle2, Pencil, AlertTriangle } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useFinance, useOT, useSalaries } from '@/hooks/useData';
+import { useFinance, useOT, useSalaries, type Finance } from '@/hooks/useData';
 import { useT } from '@/lib/i18n';
 import { useUI } from '@/components/UIContext';
 import { Badge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Select, Textarea } from '@/components/ui';
 import { DateInput, MoneyInput } from '@/components/inputs';
 import { Tabs } from '@/components/Tabs';
+import { PayslipImport, type PayslipApply } from '@/components/PayslipImport';
+import { AttachmentChips } from '@/components/AttachmentChips';
 import { Stat } from '@/components/Stat';
 import { confirmSalaryReceived, deleteOT, deleteSalary, saveOT, saveSalary, computeOT, salaryTxnId, type OTInput, type SalaryInput } from '@/db/salaryRepo';
 import { updateSettings, ValidationError } from '@/db/repo';
@@ -71,8 +73,8 @@ export default function SalaryPage() {
       {tab === 'ot' && <OTLog ot={ot} onEdit={setEditOT} />}
       {tab === 'profile' && <ProfileForm p={f.settings.salaryProfile} accounts={f.accounts} />}
 
-      {edit && <SalaryForm rec={edit === 'new' ? undefined : edit} prev={sorted[0]} profile={f.settings.salaryProfile} onClose={() => setEdit(null)} />}
-      {confirmRec && <ConfirmModal r={confirmRec} onClose={() => setConfirmRec(null)} />}
+      {edit && <SalaryForm f={f} rec={edit === 'new' ? undefined : edit} prev={sorted[0]} profile={f.settings.salaryProfile} onClose={() => setEdit(null)} />}
+      {confirmRec && <ConfirmModal f={f} r={confirmRec} onClose={() => setConfirmRec(null)} />}
       {editOT && <OTForm e={editOT === 'new' ? undefined : editOT} profile={f.settings.salaryProfile} onClose={() => setEditOT(null)} />}
     </>
   );
@@ -94,8 +96,8 @@ function ItemList({ label, items, onChange }: { label: string; items: Item[]; on
   );
 }
 
-function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?: SalaryRecord; profile: SalaryProfile; onClose: () => void }) {
-  const f = useFinance()!; const ot = useOT() ?? []; const { toast, confirm } = useUI();
+function SalaryForm({ f, rec, prev, profile, onClose }: { f: Finance; rec?: SalaryRecord; prev?: SalaryRecord; profile: SalaryProfile; onClose: () => void }) {
+  const ot = useOT() ?? []; const { toast, confirm } = useUI();
   const [s, setS] = useState<SalaryInput>(() => {
     if (rec) return { ...rec };
     const month = prev ? addMonths(prev.month + '-01', 1).slice(0, 7) : todayKL().slice(0, 7);
@@ -111,6 +113,11 @@ function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?
   const otLog = useMemo(() => ot.filter((o) => o.salaryMonth === s.month && o.approval !== 'rejected').reduce((a, o) => a + o.amount, 0), [ot, s.month]);
   const view = { ...s, ot: s.otAuto ? otLog : s.ot };
   const tot = salaryTotals(view);
+  const [payslipNet, setPayslipNet] = useState<number | null>(null);
+  const applyPayslip = (p: PayslipApply) => { setPayslipNet(p.net ?? null); setS((x) => ({ ...x,
+    month: p.month ?? x.month, company: p.company ?? x.company, basic: p.basic ?? x.basic, bonus: p.bonus ?? x.bonus,
+    ...(p.ot != null ? { otAuto: false, ot: p.ot } : {}), epf: p.epf ?? x.epf, socso: p.socso ?? x.socso, eis: p.eis ?? x.eis, pcb: p.pcb ?? x.pcb,
+    allowances: p.allowances ?? x.allowances, attachmentIds: [...new Set([...x.attachmentIds, p.attachmentId])] })); };
   const estimate = () => { const b = statutoryBases(view); setS((p) => ({ ...p, epf: estimateEPF(b.epf), socso: estimateSOCSO(b.socso), eis: estimateEIS(b.socso) })); toast('Estimates applied – check against your payslip'); };
   const M = ({ k, label }: { k: 'basic' | 'bonus' | 'claims' | 'incentives' | 'epf' | 'socso' | 'eis' | 'pcb' | 'unpaidLeave'; label: string }) => <Field label={label}><MoneyInput value={s[k] || null} onChange={(c) => set(k, c ?? 0)} /></Field>;
 
@@ -124,6 +131,7 @@ function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?
   return (
     <Modal open onClose={onClose} title={rec ? `Salary ${fmtMonth(rec.month)}` : 'New salary record'} wide>
       <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2"><PayslipImport onApply={applyPayslip} /><AttachmentChips ids={s.attachmentIds} onRemove={(id) => set('attachmentIds', s.attachmentIds.filter((x) => x !== id))} /></div>
         <Field label="Salary month"><Input type="month" value={s.month} onChange={(e) => set('month', e.target.value)} /></Field>
         <Field label="Company"><Input value={s.company} onChange={(e) => set('company', e.target.value)} maxLength={100} /></Field>
         <Field label="Expected pay date"><DateInput value={s.expectedPayDate} onChange={(v) => set('expectedPayDate', v)} /></Field>
@@ -147,7 +155,7 @@ function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?
           <div><p className="text-xs text-slate-500">Deductions</p><p className="font-semibold tabular-nums text-expense">{rm(tot.totalDeductions)}</p></div>
           <div><p className="text-xs text-slate-500">Expected net</p><p className="font-semibold tabular-nums text-income">{rm(tot.expectedNet)}</p></div>
         </div>
-        <p className="text-xs text-slate-500 sm:col-span-2">Payslip upload & OCR will be available with the receipt scanner (Phase 4).</p>
+        {payslipNet != null && <p className={`text-xs sm:col-span-2 ${payslipNet === tot.expectedNet ? 'text-income' : 'text-warn'}`}>Payslip net pay {rm(payslipNet)}{payslipNet === tot.expectedNet ? ' ✓ matches' : ` – differs by ${formatRM(payslipNet - tot.expectedNet, { sign: true })}; check other deductions.`} Use “Confirm received” to record the amount actually paid.</p>}
         {errors.length > 0 && <ul className="text-sm text-red-600 sm:col-span-2">{errors.map((x) => <li key={x}>• {x}</li>)}</ul>}
         <div className="flex justify-between gap-2 sm:col-span-2">
           {rec ? <Button variant="ghost" className="text-red-600" onClick={remove}><Trash2 className="h-4 w-4" />Delete</Button> : <span />}
@@ -158,8 +166,8 @@ function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?
   );
 }
 
-function ConfirmModal({ r, onClose }: { r: SalaryRecord; onClose: () => void }) {
-  const f = useFinance()!; const { toast } = useUI();
+function ConfirmModal({ f, r, onClose }: { f: Finance; r: SalaryRecord; onClose: () => void }) {
+  const { toast } = useUI();
   const [amt, setAmt] = useState<number | null>(r.actualNet ?? r.expectedNet); const [date, setDate] = useState(r.paymentDate ?? todayKL()); const [acc, setAcc] = useState(r.accountId ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   return (

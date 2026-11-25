@@ -59,17 +59,40 @@ Legend: [x] done & tested · [~] partial · [ ] not started
 - [x] Supabase migration `0003_phase3.sql` (not wired up yet)
 - [x] Tests: 28 automated (loan maths, schedules, card statements, budget levels/copy, goals & reservations, loan/card ledger & cash flow, recurring tasks, simulator purity, v1→v3 migration, demo cleanup) + Playwright flow test; no console errors; no mobile overflow
 
-## Phase 4 – Receipt scanner (camera, OCR, PDF), receipt library, attachments
+## Phase 4 – Receipt scanner, OCR, receipt library, attachments ✅
+- [x] DB schema v4 (additive): attachments (metadata + SHA-256), files (original blob, processed copy, thumbnail), receipts
+- [x] Capture: live camera (rear camera preferred, switch camera, preview, retake/use, multi-shot), system-camera fallback, upload (multiple), paste (Ctrl+V & button), drag & drop
+- [x] Formats: JPG, JPEG, PNG, WEBP, HEIC/HEIF (converted on device), PDF; size/type validation (20 MB)
+- [x] Image tools: zoom, rotate, crop (drag), enhance (contrast stretch + sharpen), apply & rescan, reset to original – original file never modified
+- [x] Real on-device OCR: Tesseract.js 7 (eng + msa) with self-hosted worker/WASM/models (no CDN, works offline); PDF.js text layer for digital PDFs, rendered-page OCR for scanned PDFs
+- [x] Parser for Malaysian receipts (EN/BM): merchant, registration no., address, date (DMY, YMD, month names incl. BM), time, receipt/invoice no., items (qty × price), subtotal, discount, SST/tax, service charge, rounding, total, currency, payment method (cash, cards, DuitNow QR, e-wallets, FPX); OCR digit fixes
+- [x] Per-field confidence; missing/uncertain fields highlighted; consistency checks (subtotal/tax/total, items vs subtotal); fallbacks are flagged, never silent – no fabricated values
+- [x] Category suggestion: learned merchant memory → merchant/header keyword rules; account suggested only when the payment method matches exactly one account (flagged)
+- [x] Review: original beside editable fields, items editor, split across categories (must equal total), required account, raw OCR text
+- [x] Actions: Rescan, Retake, Save draft, Attach to existing transaction (suggested matches + search), Confirm & save expense, Cancel/discard
+- [x] Records created only on confirm (atomic): expense(s) + receipt link → balances, budgets, dashboard, allowance update live
+- [x] Duplicates: file hash on upload; merchant + receipt no.; merchant + date + total; matching expenses (amount, ±2 days, merchant) → warning with attach-instead or save-anyway
+- [x] Bulk queue: processing (with progress), review, draft, duplicate, failed, recorded; survives page navigation; interrupted scans resume
+- [x] Receipt Library: thumbnails, preview (image zoom / PDF pages), search (merchant, receipt no., items, OCR text, amount), filters (status, category, date range, linked), download original, edit, rescan, delete (transaction kept)
+- [x] Transaction attachments (add/view/remove – removing never deletes the transaction); payslips & other files tab
+- [x] Payslip OCR in salary form: basic, OT, allowances, bonus, EPF/SOCSO/EIS/PCB (employee only; employer & YTD ignored), gross/deductions/net check; user picks values to apply; payslip attached to record
+- [x] Settings disclosure: OCR is local; optional AI Vision not enabled (needs secure backend, costs, explicit consent)
+- [x] Fixed: salary form / reconcile / attach dialogs crashed on a cold page load (data read before live queries resolved)
+- [x] Supabase migration `0004_phase4.sql` (not wired up yet)
+- [x] Tests: 38 automated incl. real Tesseract OCR on generated receipts (clean + rotated/noisy BM photo) and parser tests; Playwright flow with real OCR in Chromium: single scan, bulk (4 files incl. scanned & text PDF, ~2.6 s), hash & content duplicates, split, attach-to-existing, fake-device camera capture, paste, drag & drop, library delete keeps transaction, payslip OCR; no console errors; no mobile overflow
+
 ## Phase 5 – Reports (PDF/Excel/CSV/print), insights, in-app notifications
 ## Phase 6 – ZIP backup with files, CSV import, Supabase auth + sync, PWA
 ## Phase 7 – Full testing, security review, bug fixes
 
 ## Known limitations (current)
-- Payslip upload/OCR deferred to Phase 4 (shares the OCR pipeline with receipts).
 - Statutory figures are estimates for employees under 60; PCB is entered manually.
 - Recurring items are generated when the app is opened (no background job).
 - Loan projections assume a constant rate; flat-rate early-settlement rebates are not modelled. Card minimum payment is an estimate.
 - Simulator scenarios are not saved.
+- Receipt files are not in JSON backups yet (ZIP backup in Phase 6). OCR accuracy depends on photo quality; handwritten receipts are not supported.
+- HEIC conversion tested by code path only (no HEIC sample in automated tests). Live camera needs HTTPS (or localhost); tested with Chromium's fake camera, not a physical phone.
+- AI Vision API not implemented (optional; requires a backend).
 - Data is stored only in this browser until Phase 6 (cloud sync). Download backups regularly.
 - Bahasa Melayu covers navigation and main labels; full translation is ongoing.
 - Modules marked "soon" in the sidebar are placeholders.

@@ -7,7 +7,7 @@ A local-first personal finance manager for Malaysia: amounts in RM, dates as DD/
 npm install
 npm run dev        # http://localhost:5173
 npm test           # unit/integration tests
-npm run build      # production build in dist/
+npm run build      # production build in dist/ (copies the on-device OCR engine & models to public/ocr first)
 ```
 The app works without any configuration and stores data in IndexedDB in your browser. The database starts empty; you can load demo data from **Settings**.
 
@@ -60,4 +60,11 @@ src/pages     feature screens
   - **Schedule:** shows how much sooner you'd finish with extra payments.
 - **Simulator:** try changes such as a pay rise, a car purchase or a new loan. It never changes your records.
 - **Tasks:** recurring tasks schedule the next one when you tick them off.
+- **Scanning receipts:**
+  1. Go to **Scan Receipt** and take a photo, upload files (including several at once, PDFs and HEIC), paste, or drag them in.
+  2. Check the fields highlighted in orange or red, choose the account you paid from, then press **Confirm & save expense**. Nothing is recorded before that.
+  3. Use **Split** to divide one receipt across several categories, or **Attach to existing** if you already entered the expense.
+  - Receipts are read on your device; nothing is uploaded.
+- **Receipt Library:** search, preview, download or delete receipts. Deleting a receipt keeps its transaction.
+- **Payslips:** in a salary record, use **Read payslip** to pre-fill the figures from an image or PDF.
 - **Backup:** download a JSON backup regularly. Restoring shows a preview first and takes a safety snapshot of your current data.

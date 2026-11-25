@@ -17,6 +17,8 @@ const Savings = lazy(() => import('@/pages/Savings'));
 const Debts = lazy(() => import('@/pages/Debts'));
 const Simulator = lazy(() => import('@/pages/Simulator'));
 const Tasks = lazy(() => import('@/pages/Tasks'));
+const Scanner = lazy(() => import('@/pages/Scanner'));
+const Receipts = lazy(() => import('@/pages/Receipts'));
 const ComingSoon = lazy(() => import('@/pages/ComingSoon'));
 
 export default function App() {
@@ -39,6 +41,8 @@ export default function App() {
               <Route path="debts" element={<Debts />} />
               <Route path="simulator" element={<Simulator />} />
               <Route path="tasks" element={<Tasks />} />
+              <Route path="scan" element={<Scanner />} />
+              <Route path="receipts" element={<Receipts />} />
               <Route path="settings" element={<Settings />} />
               <Route path="backup" element={<Backup />} />
               <Route path="more" element={<MorePage />} />

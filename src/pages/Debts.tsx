@@ -56,7 +56,7 @@ export default function DebtsPage() {
       <p className="mt-4 text-xs text-slate-500">Card purchases are expenses; repayments settle the balance and are never counted as expenses again. Interest and fees are recorded separately as “Loan Interest & Fees”. Minimum payments are estimates (5% or RM50) – check your statement.</p>
       {charge && <ChargeModal a={charge} f={f} onClose={() => setCharge(null)} />}
       {sched && <ScheduleModal a={sched} f={f} onClose={() => setSched(null)} />}
-      {rec && <Reconcile a={rec} onClose={() => setRec(null)} />}
+      {rec && <Reconcile a={rec} f={f} onClose={() => setRec(null)} />}
     </>
   );
 }

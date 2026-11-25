@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Archive, ArrowLeftRight, Pencil, Plus, Scale, Trash2, ArchiveRestore } from 'lucide-react';
-import { useFinance } from '@/hooks/useData';
+import { useFinance, type Finance } from '@/hooks/useData';
 import { useT } from '@/lib/i18n';
 import { useUI } from '@/components/UIContext';
 import { Badge, Button, Card, Empty, Field, Loading, Modal, PageHeader, Input } from '@/components/ui';
@@ -78,13 +78,13 @@ export default function Accounts() {
           </div>
         ))}
       </div>
-      {rec && <Reconcile a={rec} onClose={() => setRec(null)} />}
+      {rec && <Reconcile a={rec} f={f} onClose={() => setRec(null)} />}
     </>
   );
 }
 
-export function Reconcile({ a, onClose }: { a: Account; onClose: () => void }) {
-  const f = useFinance()!; const { toast } = useUI();
+export function Reconcile({ a, f, onClose }: { a: Account; f: Finance; onClose: () => void }) {
+  const { toast } = useUI();
   const cc = isLiability(a.type); const current = f.balances.get(a.id) ?? 0;
   const [actual, setActual] = useState<number | null>(cc ? -current : current); const [remarks, setRemarks] = useState('');
   const history = f.txns.filter((x) => !x.deletedAt && x.type === 'adjustment' && x.accountId === a.id).sort((x, y) => y.date.localeCompare(x.date));

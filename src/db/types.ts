@@ -192,3 +192,46 @@ export interface Task extends Base {
   status: 'pending' | 'done' | 'cancelled';
   seriesId: string; completedAt: string | null; remarks: string;
 }
+
+/* ---------------- Phase 4 ---------------- */
+export type AttachmentKind = 'receipt' | 'payslip' | 'other';
+/** File metadata. The bytes live in the `files` table so lists stay fast. Deleting an attachment never deletes a transaction. */
+export interface Attachment extends Base {
+  kind: AttachmentKind;
+  fileName: string; mimeType: string; size: number;
+  hash: string; // SHA-256 of the original bytes (duplicate detection)
+  width?: number; height?: number; pages?: number;
+}
+export interface StoredFile { id: string /* = attachment id */; blob: Blob; thumb: Blob | null; processed: Blob | null /* edited image used for OCR */ }
+
+export type Confidence = 'high' | 'medium' | 'low';
+export interface Field<T> { value: T | null; confidence: Confidence | null; source?: string }
+export interface ReceiptItem { name: string; qty: number | null; unitPrice: number | null; amount: number | null }
+export interface ReceiptData {
+  merchant: Field<string>; address: Field<string>; registrationNo: Field<string>;
+  date: Field<string>; time: Field<string>; receiptNo: Field<string>;
+  items: ReceiptItem[];
+  subtotal: Field<number>; discount: Field<number>; sst: Field<number>; serviceCharge: Field<number>; rounding: Field<number>; total: Field<number>;
+  currency: Field<string>; paymentMethod: Field<PaymentMethod>;
+  warnings: string[];
+}
+export type ReceiptStatus = 'processing' | 'review' | 'draft' | 'recorded' | 'duplicate' | 'failed';
+export interface Split { categoryId: string; amount: number; needWant: NeedWant; note: string }
+export interface Receipt extends Base {
+  attachmentId: string;
+  status: ReceiptStatus;
+  ocrText: string; ocrConfidence: number | null; ocrEngine: string; textSource: 'ocr' | 'pdf-text' | 'manual' | null;
+  data: ReceiptData | null;
+  /** User-edited values (what gets saved). */
+  form: ReceiptForm | null;
+  txnIds: string[];
+  duplicateOf: string[]; // receipt or transaction ids flagged as possible duplicates
+  error: string | null;
+  merchant: string; date: string | null; total: number | null; receiptNo: string; // denormalised for search
+}
+export interface ReceiptForm {
+  merchant: string; address: string; date: string; time: string; receiptNo: string;
+  items: ReceiptItem[]; subtotal: number | null; discount: number | null; sst: number | null; serviceCharge: number | null; total: number | null;
+  paymentMethod: PaymentMethod | null; accountId: string | null; categoryId: string | null; needWant: NeedWant; remarks: string;
+  splits: Split[]; // empty = single category
+}

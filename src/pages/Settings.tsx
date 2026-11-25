@@ -49,6 +49,10 @@ export default function SettingsPage() {
             </div>
           ))}
         </Card>
+        <Card title="Receipt scanning (OCR)">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Receipts and payslips are read <b>on this device</b> with Tesseract.js (English + Bahasa Melayu) and PDF.js. Files and text are never sent to a server. Free, no account needed.</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400"><b>AI Vision (optional): not enabled.</b> Cloud AI can read difficult receipts more accurately, but it requires a secure backend you control, has per-image costs, and would send your financial documents to a third party. It will only be offered with an explicit opt-in and cost disclosure; no keys are ever stored in this app.</p>
+        </Card>
         <Card title="About"><p className="text-sm text-slate-500">MyFinance v{APP_VERSION} · database schema v{SCHEMA_VERSION} · storage: this device (IndexedDB). Cloud sync via Supabase is planned for Phase 6.</p></Card>
       </div>
       {editCat && <CategoryModal c={editCat} onClose={() => setEditCat(null)} />}

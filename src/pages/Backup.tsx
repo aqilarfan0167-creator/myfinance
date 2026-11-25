@@ -42,7 +42,7 @@ export default function BackupPage() {
       <PageHeader title={t('Backup & Restore')} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Manual backup">
-          <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">Download all accounts, transactions, categories and settings as a JSON file. Keep it somewhere safe (e.g. Google Drive). ZIP backups with receipt images & payslips will be added with the receipt features (Phase 4/6).</p>
+          <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">Download all accounts, transactions, categories and settings as a JSON file. Keep it somewhere safe (e.g. Google Drive). <b>Receipt images, PDFs and payslip files are not included in JSON backups</b> – the full ZIP backup with files arrives in Phase 6. Until then, files stay safely in this browser and can be downloaded from the Receipt Library.</p>
           <Button onClick={exportJSON}><Download className="h-4 w-4" />Download JSON backup</Button>
         </Card>
         <Card title="Restore / import">

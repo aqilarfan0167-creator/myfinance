@@ -6,6 +6,7 @@ import { useFinance } from '@/hooks/useData';
 import { useUI } from './UIContext';
 import { blankTxn, deleteTransaction, findDuplicates, saveTransaction, ValidationError, type TxnInput } from '@/db/repo';
 import { saveRule } from '@/db/commitmentRepo';
+import { AttachmentList } from './AttachmentList';
 import { FREQUENCIES } from '@/domain/schedule';
 import type { Frequency } from '@/db/types';
 import type { Transaction, TxnType } from '@/db/types';
@@ -143,6 +144,7 @@ export function TransactionForm({ initialType = 'expense', edit, preset, onClose
             </div>}
           </div>
         )}
+        {edit && <div className="sm:col-span-2"><AttachmentList txnId={edit.id} /></div>}
         <Field label="Remarks" className="sm:col-span-2"><Textarea rows={2} value={t.remarks} onChange={(e) => set('remarks', e.target.value)} maxLength={2000} /></Field>
 
         {t.related.some((r) => r.kind === 'occurrence') && <p className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800 sm:col-span-2 dark:bg-blue-950/40 dark:text-blue-200">Linked to a commitment payment – it will be marked as paid.{!edit && <button type="button" className="ml-2 underline" onClick={() => set('related', t.related.filter((r) => r.kind !== 'occurrence' && r.kind !== 'commitment'))}>Unlink</button>}</p>}
