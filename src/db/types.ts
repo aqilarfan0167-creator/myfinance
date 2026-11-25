@@ -81,6 +81,7 @@ export interface Settings {
   demoLoaded: boolean;
   merchantCategory: Record<string, string>; // learned merchant -> categoryId
   salaryProfile: SalaryProfile;
+  notificationPrefs: NotificationPrefs;
 }
 
 export interface AuditEntry { id: string; at: string; entity: string; entityId: string; action: 'create' | 'update' | 'delete' | 'restore' | 'import'; before?: unknown; after?: unknown }
@@ -234,4 +235,26 @@ export interface ReceiptForm {
   items: ReceiptItem[]; subtotal: number | null; discount: number | null; sst: number | null; serviceCharge: number | null; total: number | null;
   paymentMethod: PaymentMethod | null; accountId: string | null; categoryId: string | null; needWant: NeedWant; remarks: string;
   splits: Split[]; // empty = single category
+}
+
+/* ---------------- Phase 5 ---------------- */
+export type NotifType = 'payment_due' | 'overdue' | 'budget' | 'low_balance' | 'salary' | 'task' | 'receipt' | 'subscription' | 'backup' | 'card_due';
+export interface NotificationPrefs {
+  payments: { enabled: boolean; daysBefore: number };
+  overdue: boolean;
+  budget: { enabled: boolean; warnAt: number /* % */ };
+  lowBalance: boolean;
+  salary: boolean;
+  tasks: { enabled: boolean; daysBefore: number };
+  receipts: boolean;
+  subscriptions: { enabled: boolean; daysBefore: number };
+  backup: { enabled: boolean; everyDays: number };
+  /** Show system notifications while MyFinance is open (needs browser permission). */
+  browser: boolean;
+}
+export interface AppNotification {
+  id: string; // deterministic key, e.g. `due:<occurrenceId>` – prevents duplicates
+  type: NotifType; severity: 'info' | 'warning' | 'alert';
+  title: string; body: string; link: string;
+  createdAt: string; readAt: string | null; dismissedAt: string | null; resolvedAt: string | null;
 }

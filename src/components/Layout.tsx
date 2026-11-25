@@ -1,5 +1,9 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, ArrowLeftRight, ScanLine, PieChart, Menu, Moon, Sun, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Home, ArrowLeftRight, ScanLine, PieChart, Menu, Moon, Sun, Plus, TrendingUp, TrendingDown, Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/db/db';
+import { NotificationRunner } from './NotificationRunner';
 import { useEffect, useState } from 'react';
 import { NAV } from './nav';
 import { useT } from '@/lib/i18n';
@@ -17,6 +21,14 @@ export function applyTheme(theme: 'light' | 'dark' | 'system') {
 export function Layout() {
   const t = useT(); const { openTxn } = useUI(); const s = useSettings(); const loc = useLocation();
   const [fab, setFab] = useState(false);
+  const unread = useLiveQuery(() => db.notifications.filter((n) => !n.readAt && !n.dismissedAt && !n.resolvedAt).count(), []) ?? 0;
+  // Print reports in light mode
+  useEffect(() => {
+    const before = () => { document.documentElement.dataset.wasDark = String(document.documentElement.classList.contains('dark')); document.documentElement.classList.remove('dark'); };
+    const after = () => { if (document.documentElement.dataset.wasDark === 'true') document.documentElement.classList.add('dark'); };
+    window.addEventListener('beforeprint', before); window.addEventListener('afterprint', after);
+    return () => { window.removeEventListener('beforeprint', before); window.removeEventListener('afterprint', after); };
+  }, []);
   useEffect(() => { if (s) applyTheme(s.theme); }, [s?.theme]); // eslint-disable-line
   useEffect(() => { setFab(false); window.scrollTo(0, 0); }, [loc.pathname]);
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
@@ -43,9 +55,13 @@ export function Layout() {
             <QA onClick={() => openTxn({ type: 'expense' })} icon={TrendingDown} label={t('Add Expense')} cls="text-expense" />
             <QA onClick={() => openTxn({ type: 'transfer' })} icon={ArrowLeftRight} label={t('Transfer')} cls="text-transfer" />
           </div>
+          <div className="flex items-center gap-1">
+          <Link to="/notifications" aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`} className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"><Bell className="h-5 w-5" />{unread > 0 && <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-expense px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}</Link>
           <button onClick={toggleTheme} aria-label="Toggle dark mode" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
+          </div>
         </header>
-        <main className="mx-auto max-w-7xl p-4 pb-28 lg:pb-8"><Outlet /></main>
+        <main className="mx-auto max-w-7xl p-4 pb-28 lg:pb-8 print:p-0"><Outlet /></main>
+        <NotificationRunner />
       </div>
 
       {/* Mobile quick-add */}

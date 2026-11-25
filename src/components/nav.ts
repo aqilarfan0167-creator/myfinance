@@ -21,9 +21,9 @@ export const NAV: NavItem[] = [
   { to: '/simulator', label: 'Financial Simulator', icon: FlaskConical },
   { to: '/calendar', label: 'Financial Calendar', icon: CalendarDays },
   { to: '/tasks', label: 'Financial Tasks', icon: ListTodo },
-  { to: '/insights', label: 'Insights', icon: Lightbulb, phase: 5 },
-  { to: '/reports', label: 'Reports', icon: FileBarChart, phase: 5 },
-  { to: '/notifications', label: 'Notifications', icon: Bell, phase: 5 },
+  { to: '/insights', label: 'Insights', icon: Lightbulb },
+  { to: '/reports', label: 'Reports', icon: FileBarChart },
+  { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/settings', label: 'Settings', icon: Settings },
   { to: '/backup', label: 'Backup & Restore', icon: DatabaseBackup },
 ];

@@ -81,7 +81,21 @@ Legend: [x] done & tested · [~] partial · [ ] not started
 - [x] Supabase migration `0004_phase4.sql` (not wired up yet)
 - [x] Tests: 38 automated incl. real Tesseract OCR on generated receipts (clean + rotated/noisy BM photo) and parser tests; Playwright flow with real OCR in Chromium: single scan, bulk (4 files incl. scanned & text PDF, ~2.6 s), hash & content duplicates, split, attach-to-existing, fake-device camera capture, paste, drag & drop, library delete keeps transaction, payslip OCR; no console errors; no mobile overflow
 
-## Phase 5 – Reports (PDF/Excel/CSV/print), insights, in-app notifications
+## Phase 5 – Reports, insights, notifications ✅
+- [x] DB schema v5 (additive): notifications table; notification preferences in settings (v1–v4 backups migrate)
+- [x] Reports: daily, weekly (Mon–Sun), monthly, yearly, custom; previous-period comparison (same length before a custom range)
+- [x] Report content: income, expenses (net of refunds), loan & card repayments, cash flow, savings transfers, savings rate, net worth, income/expense categories with share & change, top merchants, Needs vs Wants, account balances start→end, debt (cards/loans), commitments due/paid/outstanding, savings goals, salary records & OT, budget performance per month, receipt summary, trend chart (daily/weekly/monthly buckets), transaction list
+- [x] Internal transfers and card repayments excluded from income/expense totals (fees included); stated on every report/export
+- [x] Accounts added during the period start at their opening balance (no fake net-worth swings)
+- [x] Exports: PDF (jsPDF + AutoTable, lazy-loaded, page numbers), Excel .xlsx (own writer on fflate: 12 sheets, real numbers, RM & % formats, bold frozen headers), sectioned CSV, transactions CSV (UTF-8 BOM, formula-injection safe), print layout (A4, light mode, no navigation)
+- [x] Insights from actual records: month-to-date vs same days of previous months, labelled projection, top categories & merchants, unusual category increases, frequent purchases, budget exceeded / near limit / pace, savings rate, emergency-fund coverage, goals behind schedule, untracked recurring payments (ignores ones already tracked as commitments)
+- [x] Notifications: payments due (configurable days), overdue commitments, credit-card statement due, budget threshold, low balance, salary expected / not confirmed / payday, tasks, receipts awaiting review, subscription renewals, backup reminders
+- [x] Deterministic notification IDs (no duplicates), auto-resolve when the condition clears, dismissals respected, read/unread, history, header bell with unread count
+- [x] Optional system notifications while the app is open (permission flow); checked on open, on focus and every 30 min. Clearly stated: no delivery while the app is closed (no push server)
+- [x] Fixed: Notifications page crashed on first load (hook after early return). Added ESLint `react-hooks/rules-of-hooks` (`npm run lint`) – whole codebase clean
+- [x] Added cold-load smoke test (`npm run test:smoke`): 21 routes × empty/demo DB × light/dark = 84 loads, no errors
+- [x] Tests: 43 automated (periods, report maths & exclusions, mid-period accounts, insights triggers, notification dedupe/resolve/dismiss/prefs, CSV; XLSX validated with openpyxl; PDF validated with pypdf) + Playwright: downloads of PDF/Excel/CSV verified, period switching, print media, insights, notifications, permission
+
 ## Phase 6 – ZIP backup with files, CSV import, Supabase auth + sync, PWA
 ## Phase 7 – Full testing, security review, bug fixes
 
@@ -93,6 +107,8 @@ Legend: [x] done & tested · [~] partial · [ ] not started
 - Receipt files are not in JSON backups yet (ZIP backup in Phase 6). OCR accuracy depends on photo quality; handwritten receipts are not supported.
 - HEIC conversion tested by code path only (no HEIC sample in automated tests). Live camera needs HTTPS (or localhost); tested with Chromium's fake camera, not a physical phone.
 - AI Vision API not implemented (optional; requires a backend).
+- Notifications only appear while MyFinance is open or reopened; true background/push reminders need a push service (not configured).
+- Report charts are not embedded in PDF exports (tables only); use Print for charts.
 - Data is stored only in this browser until Phase 6 (cloud sync). Download backups regularly.
 - Bahasa Melayu covers navigation and main labels; full translation is ongoing.
 - Modules marked "soon" in the sidebar are placeholders.

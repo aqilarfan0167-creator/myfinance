@@ -19,6 +19,9 @@ const Simulator = lazy(() => import('@/pages/Simulator'));
 const Tasks = lazy(() => import('@/pages/Tasks'));
 const Scanner = lazy(() => import('@/pages/Scanner'));
 const Receipts = lazy(() => import('@/pages/Receipts'));
+const Reports = lazy(() => import('@/pages/Reports'));
+const Insights = lazy(() => import('@/pages/Insights'));
+const Notifications = lazy(() => import('@/pages/Notifications'));
 const ComingSoon = lazy(() => import('@/pages/ComingSoon'));
 
 export default function App() {
@@ -43,6 +46,9 @@ export default function App() {
               <Route path="tasks" element={<Tasks />} />
               <Route path="scan" element={<Scanner />} />
               <Route path="receipts" element={<Receipts />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="insights" element={<Insights />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
               <Route path="backup" element={<Backup />} />
               <Route path="more" element={<MorePage />} />

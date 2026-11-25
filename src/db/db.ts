@@ -1,13 +1,13 @@
 import Dexie, { type Table } from 'dexie';
-import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task, Attachment, StoredFile, Receipt } from './types';
+import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task, Attachment, StoredFile, Receipt, AppNotification, NotificationPrefs } from './types';
 import { defaultCategories } from './seed';
 
-export const APP_VERSION = '0.4.0';
+export const APP_VERSION = '0.5.0';
 /**
  * Schema history. NEVER edit or remove a past version; only append new ones.
  * Dexie upgrades are non-destructive: existing rows are preserved.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export class MyFinanceDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -28,6 +28,7 @@ export class MyFinanceDB extends Dexie {
   attachments!: Table<Attachment, string>;
   files!: Table<StoredFile, string>;
   receipts!: Table<Receipt, string>;
+  notifications!: Table<AppNotification, string>;
 
   constructor(name = 'myfinance') {
     super(name);
@@ -63,6 +64,11 @@ export class MyFinanceDB extends Dexie {
       files: 'id',
       receipts: 'id, attachmentId, status, date, merchant, receiptNo, updatedAt',
     }).upgrade(async (tx) => { await tx.table('meta').put({ key: 'schemaVersion', value: 4 }); });
+    // v5 (Phase 5): additive only.
+    this.version(5).stores({ notifications: 'id, type, createdAt, readAt, dismissedAt, resolvedAt' }).upgrade(async (tx) => {
+      await tx.table('settings').toCollection().modify((s: Settings) => { if (!s.notificationPrefs) s.notificationPrefs = defaultNotificationPrefs(); });
+      await tx.table('meta').put({ key: 'schemaVersion', value: 5 });
+    });
     this.on('populate', async (tx) => {
       await tx.table('categories').bulkAdd(defaultCategories());
       await tx.table('settings').add(defaultSettings());
@@ -72,7 +78,11 @@ export class MyFinanceDB extends Dexie {
 }
 
 export const defaultSettings = (): Settings => ({
-  id: 'app', language: 'en', theme: 'system', payDay: 25, demoLoaded: false, merchantCategory: {}, salaryProfile: defaultSalaryProfile(),
+  id: 'app', language: 'en', theme: 'system', payDay: 25, demoLoaded: false, merchantCategory: {}, salaryProfile: defaultSalaryProfile(), notificationPrefs: defaultNotificationPrefs(),
+});
+export const defaultNotificationPrefs = (): NotificationPrefs => ({
+  payments: { enabled: true, daysBefore: 3 }, overdue: true, budget: { enabled: true, warnAt: 80 }, lowBalance: true, salary: true,
+  tasks: { enabled: true, daysBefore: 2 }, receipts: true, subscriptions: { enabled: true, daysBefore: 3 }, backup: { enabled: true, everyDays: 14 }, browser: false,
 });
 export const defaultSalaryProfile = (): SalaryProfile => ({
   company: '', basic: 0, allowances: [], hourlyRateOverride: null, workDaysPerMonth: 26, hoursPerDay: 8,

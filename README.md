@@ -6,7 +6,9 @@ A local-first personal finance manager for Malaysia: amounts in RM, dates as DD/
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit/integration tests
+npm test           # unit/integration tests (includes real OCR)
+npm run lint       # React hooks rules
+npm run test:smoke # cold-load every page (needs `npx vite preview --port 4173` running)
 npm run build      # production build in dist/ (copies the on-device OCR engine & models to public/ocr first)
 ```
 The app works without any configuration and stores data in IndexedDB in your browser. The database starts empty; you can load demo data from **Settings**.
@@ -67,4 +69,10 @@ src/pages     feature screens
   - Receipts are read on your device; nothing is uploaded.
 - **Receipt Library:** search, preview, download or delete receipts. Deleting a receipt keeps its transaction.
 - **Payslips:** in a salary record, use **Read payslip** to pre-fill the figures from an image or PDF.
+- **Reports:** pick a daily, weekly, monthly, yearly or custom period. Each report is compared with the previous period. Export it as PDF, Excel or CSV, or print it. Transfers between your own accounts are never counted as income or spending.
+- **Insights:** trends, unusual increases, frequent purchases, budget pace and savings health, all calculated from your own records.
+- **Notifications:**
+  - **Bell icon:** shows your reminders.
+  - **Choosing reminders:** pick which ones you want under Notifications → Reminder settings, where you can also turn on system pop-ups.
+  - **Timing:** reminders only appear while MyFinance is open.
 - **Backup:** download a JSON backup regularly. Restoring shows a preview first and takes a safety snapshot of your current data.

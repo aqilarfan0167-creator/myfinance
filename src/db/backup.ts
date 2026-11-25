@@ -1,6 +1,6 @@
 import { db, APP_VERSION, SCHEMA_VERSION } from './db';
 import type { Account, Category, Settings, Transaction, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, Budget, Goal, GoalEntry, Task, Attachment, Receipt } from './types';
-import { defaultSettings, defaultSalaryProfile } from './db';
+import { defaultSettings, defaultSalaryProfile, defaultNotificationPrefs } from './db';
 import { uid } from '@/lib/cn';
 
 export interface BackupFile {
@@ -45,7 +45,7 @@ export function migrateBackup(f: BackupFile): BackupFile {
   const data = { ...f.data };
   // v1 → v2/v3: new tables start empty; settings gain a salary profile.
   for (const t of TABLES) if (!Array.isArray(data[t])) (data as Record<string, unknown>)[t] = [];
-  data.settings = data.settings.map((s) => ({ ...defaultSettings(), ...s, salaryProfile: s.salaryProfile ?? defaultSalaryProfile() }));
+  data.settings = data.settings.map((s) => ({ ...defaultSettings(), ...s, salaryProfile: s.salaryProfile ?? defaultSalaryProfile(), notificationPrefs: { ...defaultNotificationPrefs(), ...s.notificationPrefs } }));
   return { ...f, data, schemaVersion: SCHEMA_VERSION };
 }
 
