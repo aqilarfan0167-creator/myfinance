@@ -14,11 +14,11 @@ import { formatRM } from '@/lib/money';
 import { fmtDate } from '@/lib/date';
 import { cn } from '@/lib/cn';
 
-export function TransactionForm({ initialType = 'expense', edit, onClose }: { initialType?: TxnType; edit?: Transaction; onClose: () => void }) {
+export function TransactionForm({ initialType = 'expense', edit, preset, onClose }: { initialType?: TxnType; edit?: Transaction; preset?: Partial<TxnInput>; onClose: () => void }) {
   const f = useFinance();
   const { toast, confirm } = useUI();
-  const [t, setT] = useState<TxnInput>(() => (edit ? { ...edit } : blankTxn(initialType)));
-  const [amount, setAmount] = useState<number | null>(edit ? edit.amount : null);
+  const [t, setT] = useState<TxnInput>(() => (edit ? { ...edit } : { ...blankTxn(initialType), ...preset }));
+  const [amount, setAmount] = useState<number | null>(edit ? edit.amount : preset?.amount ?? null);
   const [errors, setErrors] = useState<string[]>([]);
   const [dupes, setDupes] = useState<Transaction[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,10 +97,10 @@ export function TransactionForm({ initialType = 'expense', edit, onClose }: { in
           </Select>
         </Field>
         {(t.type === 'transfer' || t.type === 'debt_repayment') && (
-          <Field label={t.type === 'transfer' ? 'To account' : 'Credit card / liability account (optional)'} hint={t.type === 'debt_repayment' ? 'Leave empty for external loans (e.g. PTPTN). Card repayments are not counted as expenses again.' : 'Internal transfers are not income or expenses.'}>
+          <Field label={t.type === 'transfer' ? 'To account' : 'Credit card / loan account (optional)'} hint={t.type === 'debt_repayment' ? 'Pick the card or loan account to reduce its balance, or leave empty for an untracked external loan. Repayments are never counted as expenses.' : 'Internal transfers are not income or expenses.'}>
             <Select value={t.toAccountId ?? ''} onChange={(e) => set('toAccountId', e.target.value || null)}>
               <option value="">{t.type === 'transfer' ? '— Select account —' : '— External lender —'}</option>
-              {activeAccs.filter((a) => a.id !== t.accountId && (t.type === 'transfer' || a.type === 'credit_card')).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {activeAccs.filter((a) => a.id !== t.accountId && (t.type === 'transfer' || a.type === 'credit_card' || a.type === 'loan')).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </Select>
           </Field>
         )}
@@ -145,6 +145,7 @@ export function TransactionForm({ initialType = 'expense', edit, onClose }: { in
         )}
         <Field label="Remarks" className="sm:col-span-2"><Textarea rows={2} value={t.remarks} onChange={(e) => set('remarks', e.target.value)} maxLength={2000} /></Field>
 
+        {t.related.some((r) => r.kind === 'occurrence') && <p className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800 sm:col-span-2 dark:bg-blue-950/40 dark:text-blue-200">Linked to a commitment payment – it will be marked as paid.{!edit && <button type="button" className="ml-2 underline" onClick={() => set('related', t.related.filter((r) => r.kind !== 'occurrence' && r.kind !== 'commitment'))}>Unlink</button>}</p>}
         {errors.length > 0 && <ul className="rounded-lg bg-red-50 p-3 text-sm text-red-700 sm:col-span-2 dark:bg-red-950/40 dark:text-red-300">{errors.map((e) => <li key={e}>• {e}</li>)}</ul>}
         {dupes && (
           <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-800 sm:col-span-2 dark:bg-orange-950/40 dark:text-orange-200">

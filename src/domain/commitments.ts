@@ -1,4 +1,4 @@
-import type { Account, Commitment, Occurrence, Transaction } from '@/db/types';
+import { isLiability, type Account, type Commitment, type Occurrence, type Transaction } from '@/db/types';
 import type { Cents } from '@/lib/money';
 import { addDays } from '@/lib/date';
 
@@ -44,7 +44,7 @@ export function buildOccViews(occ: Occurrence[], commitments: Commitment[], txns
 
 /** Unpaid commitments due on/before `until` that will reduce liquid money (credit-card-paid ones don't). */
 export function unpaidLiquidCommitments(views: OccView[], accounts: Account[], until: string): Cents {
-  const cc = new Set(accounts.filter((a) => a.type === 'credit_card').map((a) => a.id));
+  const cc = new Set(accounts.filter((a) => isLiability(a.type)).map((a) => a.id));
   return views.filter((v) => v.remaining > 0 && v.dueDate <= until && !(v.commitment.accountId && cc.has(v.commitment.accountId)))
     .reduce((a, v) => a + v.remaining, 0);
 }

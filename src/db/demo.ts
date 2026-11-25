@@ -4,13 +4,15 @@ import { addDays, addMonths, monthStart, todayKL } from '@/lib/date';
 import { saveSalary, confirmSalaryReceived, saveOT, salaryTxnId } from './salaryRepo';
 import { saveCommitment, linkTransaction, saveRule, generateOccurrences } from './commitmentRepo';
 import { estimateEPF, estimateSOCSO, estimateEIS } from '@/domain/salary';
+import { setBudget, saveGoal, addGoalEntry, saveTask } from './planningRepo';
+import { budgetId } from '@/domain/planning';
 
-interface DemoIds { accounts: string[]; transactions: string[]; salaries?: string[]; ot?: string[]; commitments?: string[]; rules?: string[] }
+interface DemoIds { accounts: string[]; transactions: string[]; salaries?: string[]; ot?: string[]; commitments?: string[]; rules?: string[]; budgets?: string[]; goals?: string[]; tasks?: string[] }
 
 /** Optional demo data. All created IDs are tracked so they can be removed without touching real records. */
 export async function loadDemo() {
   const today = todayKL(); const start = addMonths(monthStart(today), -3);
-  const ids: Required<DemoIds> = { accounts: [], transactions: [], salaries: [], ot: [], commitments: [], rules: [] };
+  const ids: Required<DemoIds> = { accounts: [], transactions: [], salaries: [], ot: [], commitments: [], rules: [], budgets: [], goals: [], tasks: [] };
   const A = async (a: Partial<AccountInput>) => { const id = await saveAccount({ name: '', type: 'bank', openingBalance: 0, openingDate: start, icon: 'Landmark', color: '#0f766e', status: 'active', lowBalanceThreshold: null, includeInAvailable: true, includeInNetWorth: true, notes: 'Demo', ...a }); ids.accounts.push(id); return id; };
   const T = async (t: Partial<TxnInput>) => { const d = t.date!; if (d > today) return; ids.transactions.push(await saveTransaction({ ...blankTxn(t.type), ...t, remarks: '[demo]' })); };
 
@@ -72,17 +74,36 @@ export async function loadDemo() {
   await C('Unifi', 'expense', 12900, 7, { categoryId: 'exp-phone', accountId: cc, match: 'Unifi' });
   await C('CIMB Visa repayment', 'debt', 30000, 4, { toAccountId: cc, match: 'Card repayment' });
   await C('PTPTN', 'debt', 20000, 15, { match: 'PTPTN' });
-  await C('Car loan', 'debt', 65000, 28, {});
+  const carLoan = await A({ name: '[Demo] Car loan (Myvi)', type: 'loan', icon: 'Landmark', color: '#b91c1c', openingBalance: -3900000, openingDate: cur, includeInAvailable: false, dueDay: 28,
+    loan: { lender: 'Public Bank', loanType: 'car', originalAmount: 5200000, annualRate: 2.8, rateType: 'flat', instalment: 65000, targetDate: addMonths(cur, 60) } });
+  await C('Car loan', 'debt', 65000, 28, { toAccountId: carLoan });
   await generateOccurrences();
   ids.rules.push(await saveRule({ name: 'Monthly ASB saving', template: { type: 'transfer', amount: 50000, fee: 0, categoryId: null, accountId: bank, toAccountId: asb, merchant: '', paymentMethod: 'online_banking', needWant: null, remarks: '[demo]' },
     frequency: 'monthly', startDate: addDays(addMonths(cur, 1), 25), endDate: null, autoPost: false, active: true }));
+  // Budgets for last month and this month
+  const prevM = addMonths(cur, -1).slice(0, 7), curM = cur.slice(0, 7);
+  for (const [cat, amt] of [['exp-food', 45000], ['exp-groceries', 35000], ['exp-petrol', 25000], ['exp-shopping', 15000], ['exp-subscriptions', 6000], ['exp-utilities', 15000]] as const)
+    for (const m of [prevM, curM]) { await setBudget(m, cat, amt); ids.budgets.push(budgetId(m, cat)); }
+  // Savings goals
+  const g1 = await saveGoal({ name: '[Demo] Emergency fund', type: 'emergency', target: 2000000, targetDate: addMonths(cur, 18), startingAmount: 500000, monthlyContribution: 50000, linkedAccountId: asb, priority: 1, status: 'active', color: '#9333ea', reserveMonthly: true, remarks: '' });
+  const g2 = await saveGoal({ name: '[Demo] Japan trip', type: 'travel', target: 800000, targetDate: addMonths(cur, 10), startingAmount: 120000, monthlyContribution: 30000, linkedAccountId: bank, priority: 2, status: 'active', color: '#db2777', reserveMonthly: false, remarks: '' });
+  ids.goals.push(g1, g2);
+  for (let m = 0; m < 3; m++) await addGoalEntry(g1, { date: addDays(addMonths(start, m), 25), amount: 50000, accountId: null, note: 'Monthly ASB saving' });
+  await addGoalEntry(g2, { date: addDays(addMonths(cur, -1), 26), amount: 30000, accountId: null, note: '' });
+  // Tasks
+  for (const t of [
+    { name: 'Submit e-Filing (LHDN)', category: 'Tax (LHDN)', dueDate: `${today.slice(0, 4)}-04-30` > today ? `${today.slice(0, 4)}-04-30` : `${Number(today.slice(0, 4)) + 1}-04-30`, priority: 'high', recurrence: 'yearly' },
+    { name: 'Renew car insurance & road tax', category: 'Vehicle', dueDate: addDays(today, 5), priority: 'high', recurrence: 'yearly' },
+    { name: 'Review monthly budget', category: 'Other', dueDate: addDays(monthStart(addMonths(cur, 1)), 0), priority: 'medium', recurrence: 'monthly' },
+    { name: 'Update EPF i-Akaun nomination', category: 'Documents', dueDate: addDays(today, -3), priority: 'low', recurrence: 'none' },
+  ] as const) ids.tasks.push(await saveTask({ ...t, status: 'pending', remarks: '[demo]' }));
   await db.meta.put({ key: 'demoIds', value: ids });
   await db.settings.update('app', { demoLoaded: true });
 }
 
 export async function clearDemo() {
   const ids = (await db.meta.get('demoIds'))?.value as DemoIds | undefined;
-  await db.transaction('rw', [db.accounts, db.transactions, db.meta, db.settings, db.salaries, db.otEntries, db.commitments, db.occurrences, db.recurring], async () => {
+  await db.transaction('rw', [db.accounts, db.transactions, db.meta, db.settings, db.salaries, db.otEntries, db.commitments, db.occurrences, db.recurring, db.budgets, db.goals, db.goalEntries, db.tasks], async () => {
     if (ids) {
       const rules = ids.rules ?? [], comms = ids.commitments ?? [];
       const genTx = rules.length ? await db.transactions.where('recurringId').anyOf(rules).primaryKeys() : [];
@@ -94,6 +115,8 @@ export async function clearDemo() {
       await db.transactions.bulkDelete([...demoTx, ...occTx]); await db.accounts.bulkDelete(ids.accounts);
       await db.salaries.bulkDelete(ids.salaries ?? []); await db.otEntries.bulkDelete(ids.ot ?? []); await db.recurring.bulkDelete(rules);
       await db.commitments.bulkDelete(comms); await db.occurrences.where('commitmentId').anyOf(comms).delete();
+      await db.budgets.bulkDelete(ids.budgets ?? []); await db.goals.bulkDelete(ids.goals ?? []); await db.goalEntries.where('goalId').anyOf(ids.goals ?? []).delete();
+      const tasks = ids.tasks ?? []; await db.tasks.where('seriesId').anyOf(tasks).delete();
     }
     await db.meta.delete('demoIds'); await db.settings.update('app', { demoLoaded: false });
   });

@@ -1,15 +1,15 @@
 import { db, APP_VERSION, SCHEMA_VERSION } from './db';
-import type { Account, Category, Settings, Transaction, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule } from './types';
+import type { Account, Category, Settings, Transaction, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, Budget, Goal, GoalEntry, Task } from './types';
 import { defaultSettings, defaultSalaryProfile } from './db';
 import { uid } from '@/lib/cn';
 
 export interface BackupFile {
   app: 'MyFinance'; appVersion: string; schemaVersion: number; exportedAt: string;
-  data: { accounts: Account[]; transactions: Transaction[]; categories: Category[]; settings: Settings[]; salaries: SalaryRecord[]; otEntries: OTEntry[]; commitments: Commitment[]; occurrences: Occurrence[]; recurring: RecurringRule[] };
+  data: { accounts: Account[]; transactions: Transaction[]; categories: Category[]; settings: Settings[]; salaries: SalaryRecord[]; otEntries: OTEntry[]; commitments: Commitment[]; occurrences: Occurrence[]; recurring: RecurringRule[]; budgets: Budget[]; goals: Goal[]; goalEntries: GoalEntry[]; tasks: Task[] };
 }
 export interface SnapshotInfo { id: string; at: string; reason: string; counts: Record<string, number> }
 
-export const TABLES = ['accounts', 'transactions', 'categories', 'settings', 'salaries', 'otEntries', 'commitments', 'occurrences', 'recurring'] as const;
+export const TABLES = ['accounts', 'transactions', 'categories', 'settings', 'salaries', 'otEntries', 'commitments', 'occurrences', 'recurring', 'budgets', 'goals', 'goalEntries', 'tasks'] as const;
 const V1_TABLES = ['accounts', 'transactions', 'categories', 'settings'] as const;
 
 export async function exportAll(): Promise<BackupFile> {
@@ -43,7 +43,7 @@ export function validateBackup(o: unknown): { ok: boolean; errors: string[]; fil
 /** Upgrade older backup formats to the current schema (non-destructive). */
 export function migrateBackup(f: BackupFile): BackupFile {
   const data = { ...f.data };
-  // v1 → v2: new tables start empty; settings gain a salary profile.
+  // v1 → v2/v3: new tables start empty; settings gain a salary profile.
   for (const t of TABLES) if (!Array.isArray(data[t])) (data as Record<string, unknown>)[t] = [];
   data.settings = data.settings.map((s) => ({ ...defaultSettings(), ...s, salaryProfile: s.salaryProfile ?? defaultSalaryProfile() }));
   return { ...f, data, schemaVersion: SCHEMA_VERSION };

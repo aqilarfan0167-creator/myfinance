@@ -9,7 +9,7 @@ import { MoneyInput } from '@/components/inputs';
 import { Icon } from '@/components/Icon';
 import { Stat } from '@/components/Stat';
 import { deleteAccount, reconcileAccount, saveAccount, ValidationError } from '@/db/repo';
-import type { Account } from '@/db/types';
+import { isLiability, type Account } from '@/db/types';
 import { ACCOUNT_TYPES } from '@/lib/labels';
 import { formatRM } from '@/lib/money';
 import { fmtDate } from '@/lib/date';
@@ -35,7 +35,7 @@ export default function Accounts() {
         <Button onClick={() => openAccount()}><Plus className="h-4 w-4" />{t('Add Account')}</Button></>} />
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label={t('Total Balance')} value={formatRM(p.total)} /><Stat label={t('Available to Spend')} value={formatRM(p.available)} tone="blue" />
-        <Stat label="Credit card debt" value={formatRM(p.creditDebt)} tone="red" /><Stat label={t('Net Worth')} value={formatRM(p.netWorth)} tone="purple" />
+        <Stat label="Cards & loans owed" value={formatRM(p.creditDebt + p.loanDebt)} tone="red" sub={`Cards ${formatRM(p.creditDebt)} · Loans ${formatRM(p.loanDebt)}`} /><Stat label={t('Net Worth')} value={formatRM(p.netWorth)} tone="purple" />
       </div>
       <label className="mb-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />Show archived accounts</label>
       {!groups.length && <Empty title={showArchived ? 'No archived accounts' : 'No accounts yet'}>{!showArchived && <Button className="mt-2" onClick={() => openAccount()}>Add account</Button>}</Empty>}
@@ -45,7 +45,7 @@ export default function Accounts() {
             <h2 className="mb-2 text-sm font-semibold text-slate-500">{g.label}</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {g.items.map((a) => {
-                const bal = f.balances.get(a.id) ?? 0; const cc = a.type === 'credit_card';
+                const bal = f.balances.get(a.id) ?? 0; const cc = isLiability(a.type);
                 const used = cc ? Math.max(0, -bal) : 0; const limit = a.creditLimit ?? 0;
                 const low = !cc && a.lowBalanceThreshold != null && bal < a.lowBalanceThreshold;
                 return (
@@ -61,6 +61,7 @@ export default function Accounts() {
                       <div className="text-right">
                         <p className={`text-lg font-bold tabular-nums ${bal < 0 ? 'text-expense' : ''}`}>{cc ? formatRM(used) : formatRM(bal)}</p>
                         {cc && <p className="text-xs text-slate-500">owed{limit ? ` · avail ${formatRM(limit - used)}` : ''}</p>}
+                        {a.loan && <p className="text-xs text-slate-500">{a.loan.annualRate}% · {formatRM(a.loan.instalment)}/mo</p>}
                       </div>
                     </div>
                     {cc && limit > 0 && <div className="mt-3 h-2 rounded-full bg-slate-100 dark:bg-slate-800"><div className={`h-2 rounded-full ${used / limit >= 1 ? 'bg-red-500' : used / limit >= 0.7 ? 'bg-orange-500' : 'bg-green-600'}`} style={{ width: `${Math.min(100, (used / limit) * 100)}%` }} /></div>}
@@ -82,9 +83,9 @@ export default function Accounts() {
   );
 }
 
-function Reconcile({ a, onClose }: { a: Account; onClose: () => void }) {
+export function Reconcile({ a, onClose }: { a: Account; onClose: () => void }) {
   const f = useFinance()!; const { toast } = useUI();
-  const cc = a.type === 'credit_card'; const current = f.balances.get(a.id) ?? 0;
+  const cc = isLiability(a.type); const current = f.balances.get(a.id) ?? 0;
   const [actual, setActual] = useState<number | null>(cc ? -current : current); const [remarks, setRemarks] = useState('');
   const history = f.txns.filter((x) => !x.deletedAt && x.type === 'adjustment' && x.accountId === a.id).sort((x, y) => y.date.localeCompare(x.date));
   const target = actual == null ? null : cc ? -actual : actual;

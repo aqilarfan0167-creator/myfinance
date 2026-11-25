@@ -2,7 +2,20 @@ import type { Cents } from '@/lib/money';
 
 export interface Base { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null }
 
-export type AccountType = 'bank' | 'cash' | 'ewallet' | 'savings' | 'investment' | 'credit_card';
+export type AccountType = 'bank' | 'cash' | 'ewallet' | 'savings' | 'investment' | 'credit_card' | 'loan';
+export const LIABILITY_TYPES: AccountType[] = ['credit_card', 'loan'];
+export const isLiability = (t?: AccountType) => t === 'credit_card' || t === 'loan';
+
+export interface LoanInfo {
+  lender: string;
+  loanType: 'car' | 'housing' | 'ptptn' | 'mara' | 'personal' | 'other';
+  originalAmount: Cents;
+  annualRate: number; // % p.a.
+  /** reducing: balance is principal, interest accrues monthly. flat: balance already includes all interest (hire purchase). */
+  rateType: 'reducing' | 'flat';
+  instalment: Cents;
+  targetDate: string | null;
+}
 export interface Account extends Base {
   name: string;
   type: AccountType;
@@ -19,6 +32,7 @@ export interface Account extends Base {
   statementDay?: number | null;
   dueDay?: number | null;
   notes?: string;
+  loan?: LoanInfo | null;
 }
 
 export type TxnType = 'income' | 'expense' | 'transfer' | 'debt_repayment' | 'refund' | 'adjustment';
@@ -151,4 +165,30 @@ export interface RecurringRule extends Base {
   autoPost: boolean; // true: becomes actual on its date; false: stays expected until confirmed
   active: boolean;
   trackFrom: string;
+}
+
+/* ---------------- Phase 3 ---------------- */
+export interface Budget { id: string /* `${month}:${categoryId}` */; month: string; categoryId: string; amount: Cents; createdAt: string; updatedAt: string }
+
+export type GoalType = 'emergency' | 'car' | 'house' | 'wedding' | 'travel' | 'investment' | 'education' | 'other';
+export interface Goal extends Base {
+  name: string; type: GoalType;
+  target: Cents; targetDate: string | null;
+  startingAmount: Cents; monthlyContribution: Cents;
+  linkedAccountId: string | null;
+  priority: 1 | 2 | 3; // 1 high
+  status: 'active' | 'completed' | 'archived';
+  color: string;
+  /** Set aside this month's unpaid contribution in the daily allowance. */
+  reserveMonthly: boolean;
+  remarks: string;
+}
+export interface GoalEntry extends Base { goalId: string; date: string; amount: Cents /* + contribution, − withdrawal */; txnId: string | null; note: string }
+
+export type Priority = 'low' | 'medium' | 'high';
+export interface Task extends Base {
+  name: string; category: string; dueDate: string | null; priority: Priority;
+  recurrence: 'none' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  status: 'pending' | 'done' | 'cancelled';
+  seriesId: string; completedAt: string | null; remarks: string;
 }

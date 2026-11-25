@@ -50,4 +50,14 @@ src/pages     feature screens
 - **Commitments:** add rent, loans, PTPTN, insurance and bills. Choose "Debt repayment" for loans and credit cards. Use **Mark paid**, or link a payment you've already recorded. Unpaid amounts due before payday are deducted from your daily allowance.
 - **Recurring:** tick **Repeat** when adding a transaction, or manage them under Commitments → Recurring. Don't track the same bill both as a commitment and as a recurring transaction.
 - **Calendar:** shows month, week and day views of transactions, expected items and commitments due.
+- **Budget:** set a budget for each category every month, or copy last month's. Bars turn orange at 70% and red at 100%.
+- **Savings goals:**
+  - **Contributions:** choose an account to move money from and the app records a real transfer (never an expense). Or just update the goal's progress.
+  - **Daily allowance:** goal money kept in your spending account is set aside, so you don't spend it by accident.
+- **Debt & credit cards:**
+  - **Adding them:** add each loan as a "Loan / Financing" account. For hire-purchase car loans, choose "Flat" and enter the remaining total payable.
+  - **Charges and repayments:** record interest or fees separately. **Repay** automatically marks the matching commitment as paid.
+  - **Schedule:** shows how much sooner you'd finish with extra payments.
+- **Simulator:** try changes such as a pay rise, a car purchase or a new loan. It never changes your records.
+- **Tasks:** recurring tasks schedule the next one when you tick them off.
 - **Backup:** download a JSON backup regularly. Restoring shows a preview first and takes a safety snapshot of your current data.

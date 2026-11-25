@@ -32,3 +32,13 @@ export function useCommitments() {
   const txns = useTransactions();
   return useMemo(() => (commitments && occ && txns ? { commitments, views: buildOccViews(occ, commitments, txns, todayKL()) } : null), [commitments, occ, txns]);
 }
+
+/* ---------------- Phase 3 ---------------- */
+import { goalViews } from '@/domain/planning';
+export const useBudgets = () => useLiveQuery(() => db.budgets.toArray(), []);
+export const useTasks = () => useLiveQuery(() => db.tasks.filter((x) => !x.deletedAt).toArray(), []);
+export function useGoals() {
+  const goals = useLiveQuery(() => db.goals.filter((x) => !x.deletedAt).toArray(), []);
+  const entries = useLiveQuery(() => db.goalEntries.filter((x) => !x.deletedAt).toArray(), []);
+  return useMemo(() => (goals && entries ? { views: goalViews(goals, entries, todayKL()), entries } : null), [goals, entries]);
+}

@@ -50,11 +50,12 @@ describe('backup & restore', () => {
     expect(await db.transactions.count()).toBeGreaterThan(50);
     expect(await db.salaries.count()).toBeGreaterThan(0);
     expect(await db.commitments.count()).toBe(6);
+    expect(await db.goals.count()).toBe(2);
     const incomes = (await db.transactions.toArray()).filter((t) => t.type === 'income' && t.status === 'actual' && !t.deletedAt);
     expect(new Set(incomes.map((t) => t.id)).size).toBe(incomes.length);
     await clearDemo();
     expect(await db.transactions.count()).toBe(1);
     expect(await db.accounts.count()).toBe(1);
-    for (const t of ['salaries', 'otEntries', 'commitments', 'occurrences', 'recurring'] as const) expect(await db.table(t).count()).toBe(0);
+    for (const t of ['salaries', 'otEntries', 'commitments', 'occurrences', 'recurring', 'budgets', 'goals', 'goalEntries', 'tasks'] as const) expect(await db.table(t).count()).toBe(0);
   });
 });

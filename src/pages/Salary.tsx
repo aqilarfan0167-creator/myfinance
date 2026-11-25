@@ -10,7 +10,7 @@ import { Tabs } from '@/components/Tabs';
 import { Stat } from '@/components/Stat';
 import { confirmSalaryReceived, deleteOT, deleteSalary, saveOT, saveSalary, computeOT, salaryTxnId, type OTInput, type SalaryInput } from '@/db/salaryRepo';
 import { updateSettings, ValidationError } from '@/db/repo';
-import type { DayType, OTEntry, SalaryProfile, SalaryRecord } from '@/db/types';
+import { isLiability, type AccountType, type DayType, type OTEntry, type SalaryProfile, type SalaryRecord } from '@/db/types';
 import { DAY_TYPES, estimateEIS, estimateEPF, estimateSOCSO, hourlyRate, salaryTotals, statutoryBases } from '@/domain/salary';
 import { formatRM } from '@/lib/money';
 import { addMonths, fmtDate, fmtMonth, todayKL, daysInMonth } from '@/lib/date';
@@ -127,7 +127,7 @@ function SalaryForm({ rec, prev, profile, onClose }: { rec?: SalaryRecord; prev?
         <Field label="Salary month"><Input type="month" value={s.month} onChange={(e) => set('month', e.target.value)} /></Field>
         <Field label="Company"><Input value={s.company} onChange={(e) => set('company', e.target.value)} maxLength={100} /></Field>
         <Field label="Expected pay date"><DateInput value={s.expectedPayDate} onChange={(v) => set('expectedPayDate', v)} /></Field>
-        <Field label="Paid into account"><Select value={s.accountId ?? ''} onChange={(e) => set('accountId', e.target.value || null)}><option value="">— Select —</option>{f.accounts.filter((a) => a.status === 'active' && a.type !== 'credit_card').map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+        <Field label="Paid into account"><Select value={s.accountId ?? ''} onChange={(e) => set('accountId', e.target.value || null)}><option value="">— Select —</option>{f.accounts.filter((a) => a.status === 'active' && !isLiability(a.type as AccountType)).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
         <h3 className="mt-2 text-sm font-semibold text-income sm:col-span-2">Earnings</h3>
         <M k="basic" label="Basic salary" />
         <Field label={`Overtime${s.otAuto ? ' (from OT log)' : ''}`} hint={<label className="flex items-center gap-1"><input type="checkbox" checked={s.otAuto} onChange={(e) => set('otAuto', e.target.checked)} />Use OT log total ({rm(otLog)})</label>}>
@@ -169,7 +169,7 @@ function ConfirmModal({ r, onClose }: { r: SalaryRecord; onClose: () => void }) 
         <Field label="Actual net amount received"><MoneyInput value={amt} onChange={setAmt} /></Field>
         {amt != null && amt !== r.expectedNet && <p className="text-xs text-warn">Differs from expected by {formatRM(amt - r.expectedNet, { sign: true })}</p>}
         <Field label="Date received"><DateInput value={date} onChange={setDate} /></Field>
-        <Field label="Received into"><Select value={acc} onChange={(e) => setAcc(e.target.value)}><option value="">— Select —</option>{f.accounts.filter((a) => a.status === 'active' && a.type !== 'credit_card').map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+        <Field label="Received into"><Select value={acc} onChange={(e) => setAcc(e.target.value)}><option value="">— Select —</option>{f.accounts.filter((a) => a.status === 'active' && !isLiability(a.type as AccountType)).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
         {errors.length > 0 && <ul className="text-sm text-red-600">{errors.map((x) => <li key={x}>• {x}</li>)}</ul>}
         <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button>
           <Button onClick={async () => { try { await confirmSalaryReceived(r.id, { actualNet: amt ?? 0, date, accountId: acc }); toast('Salary recorded as income'); onClose(); } catch (e) { setErrors(errMsg(e)); } }}>Confirm received</Button></div>
@@ -241,7 +241,7 @@ function ProfileForm({ p, accounts }: { p: SalaryProfile; accounts: { id: string
     <Card>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Company"><Input value={v.company} onChange={(e) => set('company', e.target.value)} maxLength={100} /></Field>
-        <Field label="Default salary account"><Select value={v.defaultAccountId ?? ''} onChange={(e) => set('defaultAccountId', e.target.value || null)}><option value="">—</option>{accounts.filter((a) => a.status === 'active' && a.type !== 'credit_card').map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+        <Field label="Default salary account"><Select value={v.defaultAccountId ?? ''} onChange={(e) => set('defaultAccountId', e.target.value || null)}><option value="">—</option>{accounts.filter((a) => a.status === 'active' && !isLiability(a.type as AccountType)).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
         <Field label="Basic monthly salary"><MoneyInput value={v.basic || null} onChange={(c) => set('basic', c ?? 0)} /></Field>
         <Field label="Hourly OT base override" hint={`Default: basic ÷ ${v.workDaysPerMonth} ÷ ${v.hoursPerDay} = ${rm(hourlyRate({ ...v, hourlyRateOverride: null }))}/h (Employment Act 1955)`}><MoneyInput value={v.hourlyRateOverride} onChange={(c) => set('hourlyRateOverride', c || null)} placeholder="Auto" /></Field>
         <Field label="Working days per month (ORP divisor)"><Input type="number" min={1} max={31} value={v.workDaysPerMonth} onChange={(e) => set('workDaysPerMonth', Number(e.target.value) || 26)} /></Field>

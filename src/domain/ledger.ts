@@ -1,10 +1,9 @@
-import type { Account, Category, Transaction } from '@/db/types';
+import { isLiability, type Account, type Category, type Transaction } from '@/db/types';
 import type { Cents } from '@/lib/money';
 import { FEE_CATEGORY_ID } from '@/db/seed';
 import { daysBetween, nextPayday } from '@/lib/date';
 
 export const isLive = (t: Transaction) => !t.deletedAt && t.status === 'actual';
-export const LIQUID_TYPES = new Set(['bank', 'cash', 'ewallet', 'savings']);
 
 /** Balance effects of one transaction on accounts. Internal transfers net to zero (except fees). */
 export function txnEffects(t: Transaction): { accountId: string; delta: Cents }[] {
@@ -38,27 +37,30 @@ export function computeBalances(accounts: Account[], txns: Transaction[], asOf?:
   return bal;
 }
 
-export interface Position { total: Cents; available: Cents; assets: Cents; liabilities: Cents; netWorth: Cents; creditDebt: Cents; lowBalance: Account[] }
+export interface Position { total: Cents; available: Cents; assets: Cents; liabilities: Cents; netWorth: Cents; creditDebt: Cents; loanDebt: Cents; lowBalance: Account[] }
 
 export function computePosition(accounts: Account[], bal: Map<string, Cents>, extraLiabilities: Cents = 0): Position {
-  let total = 0, available = 0, assets = 0, liabilities = 0, creditDebt = 0;
+  let total = 0, available = 0, assets = 0, liabilities = 0, creditDebt = 0, loanDebt = 0;
   const lowBalance: Account[] = [];
   for (const a of accounts) {
     if (a.deletedAt || a.status !== 'active') continue;
     const b = bal.get(a.id) ?? 0;
     if (a.type === 'credit_card') { if (b < 0) creditDebt += -b; }
+    else if (a.type === 'loan') { if (b < 0) loanDebt += -b; }
     else total += b;
-    if (a.includeInAvailable && a.type !== 'credit_card') available += b;
+    if (a.includeInAvailable && !isLiability(a.type)) available += b;
     if (a.includeInNetWorth) { if (b >= 0) assets += b; else liabilities += -b; }
-    if (a.lowBalanceThreshold != null && a.type !== 'credit_card' && b < a.lowBalanceThreshold) lowBalance.push(a);
+    if (a.lowBalanceThreshold != null && !isLiability(a.type) && b < a.lowBalanceThreshold) lowBalance.push(a);
   }
   liabilities += extraLiabilities;
-  return { total, available, assets, liabilities, netWorth: assets - liabilities, creditDebt, lowBalance };
+  return { total, available, assets, liabilities, netWorth: assets - liabilities, creditDebt, loanDebt, lowBalance };
 }
 
 export interface Summary {
   income: Cents; expenses: Cents; refunds: Cents; netExpenses: Cents; fees: Cents;
-  debtRepayments: Cents; cardRepayments: Cents; savingsTransfers: Cents; cashFlow: Cents; savingsRate: number;
+  /** Repayments of loans (loan accounts or external lenders). */ debtRepayments: Cents;
+  /** Credit card repayments – purchases were already counted as expenses. */ cardRepayments: Cents;
+  /** Interest/fees charged onto loan accounts (counted in expenses; paid via repayments). */ loanCharges: Cents; savingsTransfers: Cents; cashFlow: Cents; savingsRate: number;
   expectedIncome: Cents;
   byCategory: { categoryId: string; amount: Cents }[];
   incomeByCategory: { categoryId: string; amount: Cents }[];
@@ -74,7 +76,7 @@ export function summarize(txns: Transaction[], accounts: Account[], f: SummaryFi
   const accType = new Map(accounts.map((a) => [a.id, a.type]));
   const accSet = f.accountIds?.length ? new Set(f.accountIds) : null;
   const catSet = f.categoryIds?.length ? new Set(f.categoryIds) : null;
-  const s: Summary = { income: 0, expenses: 0, refunds: 0, netExpenses: 0, fees: 0, debtRepayments: 0, cardRepayments: 0, savingsTransfers: 0, cashFlow: 0, savingsRate: 0, expectedIncome: 0, byCategory: [], incomeByCategory: [], needs: 0, wants: 0, unclassified: 0, daily: new Map(), merchants: [] };
+  const s: Summary = { income: 0, expenses: 0, refunds: 0, netExpenses: 0, fees: 0, debtRepayments: 0, cardRepayments: 0, loanCharges: 0, savingsTransfers: 0, cashFlow: 0, savingsRate: 0, expectedIncome: 0, byCategory: [], incomeByCategory: [], needs: 0, wants: 0, unclassified: 0, daily: new Map(), merchants: [] };
   const cat = new Map<string, Cents>(), icat = new Map<string, Cents>();
   const merch = new Map<string, { amount: Cents; count: number }>();
   const addCat = (m: Map<string, Cents>, id: string | null, v: Cents) => m.set(id ?? 'uncategorised', (m.get(id ?? 'uncategorised') ?? 0) + v);
@@ -89,7 +91,8 @@ export function summarize(txns: Transaction[], accounts: Account[], f: SummaryFi
     switch (t.type) {
       case 'income': s.income += t.amount; addCat(icat, t.categoryId, t.amount); break;
       case 'expense': {
-        s.expenses += t.amount; addCat(cat, t.categoryId, t.amount); addNW(t.needWant, t.amount); addDay(t.date, t.amount);
+        s.expenses += t.amount; addCat(cat, t.categoryId, t.amount);
+        if (t.accountId && accType.get(t.accountId) === 'loan') s.loanCharges += t.amount; addNW(t.needWant, t.amount); addDay(t.date, t.amount);
         const m = (t.merchant || t.name).trim();
         if (m) { const e = merch.get(m) ?? { amount: 0, count: 0 }; e.amount += t.amount; e.count++; merch.set(m, e); }
         break;
@@ -105,13 +108,14 @@ export function summarize(txns: Transaction[], accounts: Account[], f: SummaryFi
         break;
       }
       case 'debt_repayment':
-        if (t.toAccountId) s.cardRepayments += t.amount; else s.debtRepayments += t.amount;
+        if (t.toAccountId && accType.get(t.toAccountId) === 'credit_card') s.cardRepayments += t.amount; else s.debtRepayments += t.amount;
         break;
       case 'adjustment': break;
     }
   }
   s.netExpenses = s.expenses + s.fees - s.refunds;
-  s.cashFlow = s.income - s.netExpenses - s.debtRepayments;
+  // Cash flow: loan charges are paid through repayments, so they're not subtracted twice.
+  s.cashFlow = s.income - s.netExpenses - s.debtRepayments + s.loanCharges;
   s.savingsRate = s.income > 0 ? s.cashFlow / s.income : 0;
   s.byCategory = [...cat].map(([categoryId, amount]) => ({ categoryId, amount })).filter((x) => x.amount !== 0).sort((a, b) => b.amount - a.amount);
   s.incomeByCategory = [...icat].map(([categoryId, amount]) => ({ categoryId, amount })).sort((a, b) => b.amount - a.amount);

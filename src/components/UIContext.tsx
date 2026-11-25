@@ -3,12 +3,13 @@ import { Button, Modal } from './ui';
 import { TransactionForm } from './TransactionForm';
 import { AccountForm } from './AccountForm';
 import type { Account, Transaction, TxnType } from '@/db/types';
+import type { TxnInput } from '@/db/repo';
 
 interface ConfirmOpts { title: string; message: ReactNode; confirmText?: string; danger?: boolean }
 interface UI {
   toast: (msg: string, tone?: 'ok' | 'err') => void;
   confirm: (o: ConfirmOpts) => Promise<boolean>;
-  openTxn: (o: { type?: TxnType; edit?: Transaction }) => void;
+  openTxn: (o: { type?: TxnType; edit?: Transaction; preset?: Partial<TxnInput> }) => void;
   openAccount: (edit?: Account) => void;
 }
 const Ctx = createContext<UI>(null!);
@@ -17,7 +18,7 @@ export const useUI = () => useContext(Ctx);
 export function UIProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<{ id: number; msg: string; tone: string }[]>([]);
   const [conf, setConf] = useState<(ConfirmOpts & { resolve: (b: boolean) => void }) | null>(null);
-  const [txn, setTxn] = useState<{ type?: TxnType; edit?: Transaction } | null>(null);
+  const [txn, setTxn] = useState<{ type?: TxnType; edit?: Transaction; preset?: Partial<TxnInput> } | null>(null);
   const [acc, setAcc] = useState<{ edit?: Account } | null>(null);
 
   const toast = useCallback((msg: string, tone: 'ok' | 'err' = 'ok') => {
@@ -31,7 +32,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ toast, confirm, openTxn: setTxn, openAccount: (edit) => setAcc({ edit }) }}>
       {children}
-      {txn && <TransactionForm key={txn.edit?.id ?? txn.type} initialType={txn.type} edit={txn.edit} onClose={() => setTxn(null)} />}
+      {txn && <TransactionForm key={txn.edit?.id ?? txn.type} initialType={txn.type} edit={txn.edit} preset={txn.preset} onClose={() => setTxn(null)} />}
       {acc && <AccountForm edit={acc.edit} onClose={() => setAcc(null)} />}
       <Modal open={!!conf} onClose={() => close(false)} title={conf?.title ?? ''}>
         <div className="text-sm text-slate-600 dark:text-slate-300">{conf?.message}</div>

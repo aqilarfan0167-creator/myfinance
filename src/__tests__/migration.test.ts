@@ -3,7 +3,7 @@ import Dexie from 'dexie';
 import { MyFinanceDB } from '@/db/db';
 
 describe('IndexedDB schema migration', () => {
-  it('upgrades a v1 database to v2 without losing data', async () => {
+  it('upgrades a v1 database to the latest schema without losing data', async () => {
     const name = 'mig-test';
     const v1 = new Dexie(name);
     v1.version(1).stores({ accounts: 'id, type, status, updatedAt', transactions: 'id, date, type, accountId, toAccountId, categoryId, status, merchant, updatedAt, recurringId', categories: 'id, kind, name', settings: 'id', audit: 'id, at, entity, entityId', meta: 'key' });
@@ -15,7 +15,8 @@ describe('IndexedDB schema migration', () => {
 
     const v2 = new MyFinanceDB(name);
     await v2.open();
-    expect(v2.verno).toBe(2);
+    expect(v2.verno).toBe(3);
+    expect(await v2.goals.count()).toBe(0);
     expect((await v2.accounts.get('a1'))!.openingBalance).toBe(12345);
     expect((await v2.transactions.get('t1'))!.amount).toBe(999);
     const s = (await v2.settings.get('app'))!;

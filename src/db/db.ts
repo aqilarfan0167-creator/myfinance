@@ -1,13 +1,13 @@
 import Dexie, { type Table } from 'dexie';
-import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile } from './types';
+import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task } from './types';
 import { defaultCategories } from './seed';
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 /**
  * Schema history. NEVER edit or remove a past version; only append new ones.
  * Dexie upgrades are non-destructive: existing rows are preserved.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class MyFinanceDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -21,6 +21,10 @@ export class MyFinanceDB extends Dexie {
   commitments!: Table<Commitment, string>;
   occurrences!: Table<Occurrence, string>;
   recurring!: Table<RecurringRule, string>;
+  budgets!: Table<Budget, string>;
+  goals!: Table<Goal, string>;
+  goalEntries!: Table<GoalEntry, string>;
+  tasks!: Table<Task, string>;
 
   constructor(name = 'myfinance') {
     super(name);
@@ -43,6 +47,13 @@ export class MyFinanceDB extends Dexie {
       await tx.table('settings').toCollection().modify((s: Settings) => { if (!s.salaryProfile) s.salaryProfile = defaultSalaryProfile(); });
       await tx.table('meta').put({ key: 'schemaVersion', value: 2 });
     });
+    // v3 (Phase 3): additive only.
+    this.version(3).stores({
+      budgets: 'id, month, categoryId',
+      goals: 'id, status, updatedAt',
+      goalEntries: 'id, goalId, date, txnId',
+      tasks: 'id, dueDate, status, seriesId, updatedAt',
+    }).upgrade(async (tx) => { await tx.table('meta').put({ key: 'schemaVersion', value: 3 }); });
     this.on('populate', async (tx) => {
       await tx.table('categories').bulkAdd(defaultCategories());
       await tx.table('settings').add(defaultSettings());

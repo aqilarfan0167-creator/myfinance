@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCommitments, useFinance } from '@/hooks/useData';
+import { useCommitments, useFinance, useGoals, useTasks } from '@/hooks/useData';
+import { useNavigate } from 'react-router-dom';
 import { useT } from '@/lib/i18n';
 import { useUI } from '@/components/UIContext';
 import { Card, Loading, PageHeader, Button, Badge } from '@/components/ui';
@@ -11,26 +12,27 @@ import { addDays, addMonths, daysBetween, fmtDate, fmtMonth, monthEnd, monthStar
 import { cn } from '@/lib/cn';
 import type { Transaction } from '@/db/types';
 
-type Kind = 'income' | 'expense' | 'transfer' | 'expected' | 'commitment';
-interface Ev { id: string; date: string; title: string; amount: number; kind: Kind; status?: string; txn?: Transaction }
-const DOT: Record<Kind, string> = { income: 'bg-income', expense: 'bg-expense', transfer: 'bg-transfer', expected: 'bg-warn', commitment: 'bg-saving' };
+type Kind = 'income' | 'expense' | 'transfer' | 'expected' | 'commitment' | 'task' | 'goal';
+interface Ev { id: string; date: string; title: string; amount: number | null; kind: Kind; status?: string; txn?: Transaction; href?: string }
+const DOT: Record<Kind, string> = { income: 'bg-income', expense: 'bg-expense', transfer: 'bg-transfer', expected: 'bg-warn', commitment: 'bg-saving', task: 'bg-slate-500', goal: 'bg-pink-500' };
 const CHIP: Record<Kind, string> = {
   income: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', expense: 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   transfer: 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', expected: 'border border-dashed border-orange-400 text-orange-700 dark:text-orange-300',
   commitment: 'bg-purple-50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  task: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', goal: 'bg-pink-50 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
 };
-const LEGEND: { k: Kind; label: string }[] = [{ k: 'income', label: 'Income' }, { k: 'expense', label: 'Expenses' }, { k: 'transfer', label: 'Transfers & repayments' }, { k: 'expected', label: 'Expected / planned' }, { k: 'commitment', label: 'Commitments due' }];
+const LEGEND: { k: Kind; label: string }[] = [{ k: 'income', label: 'Income' }, { k: 'expense', label: 'Expenses' }, { k: 'transfer', label: 'Transfers & repayments' }, { k: 'expected', label: 'Expected / planned' }, { k: 'commitment', label: 'Commitments due' }, { k: 'task', label: 'Tasks' }, { k: 'goal', label: 'Goal targets' }];
 const weekStart = (d: string) => { const dow = (new Date(d + 'T00:00:00Z').getUTCDay() + 6) % 7; return addDays(d, -dow); }; // Monday
 
 export default function CalendarPage() {
-  const t = useT(); const f = useFinance(); const c = useCommitments(); const { openTxn } = useUI();
+  const t = useT(); const f = useFinance(); const c = useCommitments(); const tasks = useTasks(); const goals = useGoals(); const { openTxn } = useUI(); const nav = useNavigate();
   const today = todayKL();
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [cursor, setCursor] = useState(today);
   const [hidden, setHidden] = useState<Set<Kind>>(new Set());
 
   const events = useMemo(() => {
-    if (!f || !c) return new Map<string, Ev[]>();
+    if (!f || !c || !tasks || !goals) return new Map<string, Ev[]>();
     const m = new Map<string, Ev[]>();
     const push = (e: Ev) => { if (hidden.has(e.kind)) return; const a = m.get(e.date) ?? []; a.push(e); m.set(e.date, a); };
     for (const x of f.txns) {
@@ -38,21 +40,23 @@ export default function CalendarPage() {
       const kind: Kind = x.status === 'expected' ? 'expected' : x.type === 'income' || x.type === 'refund' ? 'income' : x.type === 'expense' ? 'expense' : 'transfer';
       push({ id: x.id, date: x.date, title: x.name, amount: x.amount, kind, txn: x });
     }
-    for (const v of c.views) if (!v.skipped) push({ id: v.id, date: v.dueDate, title: v.commitment.name, amount: v.amount, kind: 'commitment', status: v.status });
+    for (const v of c.views) if (!v.skipped) push({ id: v.id, date: v.dueDate, title: v.commitment.name, amount: v.amount, kind: 'commitment', status: v.status, href: '/commitments' });
+    for (const k of tasks) if (k.dueDate && k.status === 'pending') push({ id: k.id, date: k.dueDate, title: k.name, amount: null, kind: 'task', href: '/tasks' });
+    for (const g of goals.views) if (g.targetDate && g.status === 'active') push({ id: g.id, date: g.targetDate, title: `🎯 ${g.name}`, amount: g.remaining, kind: 'goal', href: '/savings' });
     return m;
-  }, [f, c, hidden]);
+  }, [f, c, tasks, goals, hidden]);
   if (!f || !c) return <Loading />;
 
   const step = (n: number) => setCursor(view === 'month' ? addMonths(monthStart(cursor), n) : addDays(cursor, n * (view === 'week' ? 7 : 1)));
   const label = view === 'month' ? fmtMonth(cursor.slice(0, 7), f.settings.language) : view === 'week' ? `${fmtDate(weekStart(cursor))} – ${fmtDate(addDays(weekStart(cursor), 6))}` : fmtDate(cursor);
   const evOf = (d: string) => (events.get(d) ?? []).sort((a, b) => a.kind.localeCompare(b.kind));
-  const open = (e: Ev) => { if (e.txn) openTxn({ edit: e.txn }); };
+  const open = (e: Ev) => { if (e.txn) openTxn({ edit: e.txn }); else if (e.href) nav(e.href); };
   const toggle = (k: Kind) => setHidden((h) => { const n = new Set(h); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const EvLine = ({ e }: { e: Ev }) => (
     <button onClick={() => open(e)} className={cn('flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm', CHIP[e.kind])}>
       <span className="truncate">{e.title}{e.status && <> <Badge tone={STATUS_META[e.status as keyof typeof STATUS_META].tone}>{STATUS_META[e.status as keyof typeof STATUS_META].label}</Badge></>}</span>
-      <span className="shrink-0 tabular-nums">{formatRM(e.amount)}</span>
+      {e.amount != null && <span className="shrink-0 tabular-nums">{formatRM(e.amount)}</span>}
     </button>
   );
 
@@ -98,7 +102,6 @@ export default function CalendarPage() {
       </div>}
 
       {view === 'day' && <Card title={fmtDate(cursor)}>{selEvents.length ? <div className="space-y-1">{selEvents.map((e) => <EvLine key={e.id} e={e} />)}</div> : <p className="text-sm text-slate-500">Nothing on this day.</p>}</Card>}
-      <p className="mt-3 text-xs text-slate-500">Savings goals and financial tasks will appear here once those modules are added (Phase 3).</p>
     </>
   );
 }

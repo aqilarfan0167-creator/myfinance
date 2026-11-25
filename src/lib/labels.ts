@@ -14,7 +14,7 @@ export const PAYMENT_METHODS: { v: PaymentMethod; label: string }[] = [
 ];
 export const ACCOUNT_TYPES: { v: AccountType; label: string; icon: string }[] = [
   { v: 'bank', label: 'Bank Account', icon: 'Landmark' }, { v: 'cash', label: 'Cash', icon: 'Banknote' }, { v: 'ewallet', label: 'E-Wallet', icon: 'Wallet' },
-  { v: 'savings', label: 'Savings', icon: 'PiggyBank' }, { v: 'investment', label: 'Investment', icon: 'LineChart' }, { v: 'credit_card', label: 'Credit Card', icon: 'CreditCard' },
+  { v: 'savings', label: 'Savings', icon: 'PiggyBank' }, { v: 'investment', label: 'Investment', icon: 'LineChart' }, { v: 'credit_card', label: 'Credit Card', icon: 'CreditCard' }, { v: 'loan', label: 'Loan / Financing', icon: 'Landmark' },
 ];
 /** Sign shown for a transaction in lists, relative to a viewing account (optional). */
 export function txnSign(type: TxnType, amount: number, viewAccount?: string, t?: { accountId: string | null; toAccountId: string | null }): number {
