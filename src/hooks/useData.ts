@@ -1,0 +1,21 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
+import { db } from '@/db/db';
+import { computeBalances, computePosition, categoryMap } from '@/domain/ledger';
+
+export const useSettings = () => useLiveQuery(() => db.settings.get('app'), []);
+export const useAccounts = (includeDeleted = false) =>
+  useLiveQuery(() => db.accounts.toArray().then((a) => (includeDeleted ? a : a.filter((x) => !x.deletedAt))), [includeDeleted]);
+export const useTransactions = () => useLiveQuery(() => db.transactions.toArray(), []);
+export const useCategories = () => useLiveQuery(() => db.categories.toArray(), []);
+
+/** Everything the dashboard/forms need; recomputed live whenever any record changes. */
+export function useFinance() {
+  const accounts = useAccounts(); const txns = useTransactions(); const cats = useCategories(); const settings = useSettings();
+  return useMemo(() => {
+    if (!accounts || !txns || !cats || !settings) return null;
+    const balances = computeBalances(accounts, txns);
+    return { accounts, txns, cats, settings, balances, position: computePosition(accounts, balances), catMap: categoryMap(cats), accMap: new Map(accounts.map((a) => [a.id, a])) };
+  }, [accounts, txns, cats, settings]);
+}
+export type Finance = NonNullable<ReturnType<typeof useFinance>>;
