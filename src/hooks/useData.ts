@@ -19,3 +19,16 @@ export function useFinance() {
   }, [accounts, txns, cats, settings]);
 }
 export type Finance = NonNullable<ReturnType<typeof useFinance>>;
+
+/* ---------------- Phase 2 ---------------- */
+import { buildOccViews } from '@/domain/commitments';
+import { todayKL } from '@/lib/date';
+export const useSalaries = () => useLiveQuery(() => db.salaries.filter((x) => !x.deletedAt).toArray(), []);
+export const useOT = () => useLiveQuery(() => db.otEntries.filter((x) => !x.deletedAt).toArray(), []);
+export const useRules = () => useLiveQuery(() => db.recurring.filter((x) => !x.deletedAt).toArray(), []);
+export function useCommitments() {
+  const commitments = useLiveQuery(() => db.commitments.filter((x) => !x.deletedAt).toArray(), []);
+  const occ = useLiveQuery(() => db.occurrences.toArray(), []);
+  const txns = useTransactions();
+  return useMemo(() => (commitments && occ && txns ? { commitments, views: buildOccViews(occ, commitments, txns, todayKL()) } : null), [commitments, occ, txns]);
+}

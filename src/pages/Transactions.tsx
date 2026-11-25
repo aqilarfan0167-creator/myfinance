@@ -8,6 +8,7 @@ import { Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Select }
 import { DateInput, MoneyInput } from '@/components/inputs';
 import { TxnRow } from '@/components/TxnRow';
 import { confirmExpected, restoreTransaction } from '@/db/repo';
+import { confirmSalaryReceived } from '@/db/salaryRepo';
 import type { Transaction, TxnType } from '@/db/types';
 import { TXN_TYPES, txnLabel, PAYMENT_METHODS } from '@/lib/labels';
 import { formatRM } from '@/lib/money';
@@ -82,7 +83,7 @@ export default function Transactions({ fixedType }: { fixedType?: 'income' | 'ex
             {rows.slice(0, limit).map((x) => (
               <TxnRow key={x.id} t={x} f={f} onClick={showDeleted ? undefined : () => openTxn({ edit: x })}
                 action={showDeleted ? <Button variant="ghost" onClick={async () => { await restoreTransaction(x.id); toast('Restored'); }}><RotateCcw className="h-4 w-4" />Restore</Button>
-                  : x.status === 'expected' ? <Button variant="ghost" className="text-income" onClick={(e) => { e.stopPropagation(); setReceive(x); }}><CheckCircle2 className="h-4 w-4" /><span className="hidden sm:inline">Received</span></Button> : undefined} />
+                  : x.status === 'expected' ? <Button variant="ghost" className="text-income" onClick={(e) => { e.stopPropagation(); setReceive(x); }}><CheckCircle2 className="h-4 w-4" /><span className="hidden sm:inline">{x.type === 'income' ? 'Received' : 'Confirm'}</span></Button> : undefined} />
             ))}
             {rows.length > limit && <div className="pt-3 text-center"><Button variant="secondary" onClick={() => setLimit(limit + 200)}>Load more ({rows.length - limit} remaining)</Button></div>}
           </div>
@@ -98,15 +99,15 @@ function ReceiveModal({ t, onClose }: { t: Transaction; onClose: () => void }) {
   const [acc, setAcc] = useState(t.accountId ?? ''); const [date, setDate] = useState(todayKL()); const [amt, setAmt] = useState<number | null>(t.amount);
   const [err, setErr] = useState('');
   return (
-    <Modal open onClose={onClose} title="Confirm income received">
-      <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">{t.name} · expected {formatRM(t.amount)} on {fmtDate(t.date)}. This converts the same record to actual income (no duplicate).</p>
+    <Modal open onClose={onClose} title={t.type === 'income' ? 'Confirm income received' : `Confirm ${txnLabel(t.type).toLowerCase()}`}>
+      <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">{t.name} · expected {formatRM(t.amount)} on {fmtDate(t.date)}. This converts the same record to an actual transaction (no duplicate).</p>
       <div className="grid gap-3">
-        <Field label="Received into"><Select value={acc} onChange={(e) => setAcc(e.target.value)}><option value="">— Select —</option>{f?.accounts.filter((a) => a.status === 'active').map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
-        <Field label="Date received"><DateInput value={date} onChange={setDate} /></Field>
-        <Field label="Actual amount received"><MoneyInput value={amt} onChange={setAmt} /></Field>
+        <Field label={t.type === 'income' ? 'Received into' : 'Account'}><Select value={acc} onChange={(e) => setAcc(e.target.value)}><option value="">— Select —</option>{f?.accounts.filter((a) => a.status === 'active').map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+        <Field label="Date"><DateInput value={date} onChange={setDate} /></Field>
+        <Field label="Actual amount"><MoneyInput value={amt} onChange={setAmt} /></Field>
         {err && <p className="text-sm text-red-600">{err}</p>}
         <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={async () => { if (!acc || !date || !amt) return setErr('Account, date and amount are required.'); try { await confirmExpected(t.id, acc, date, amt); toast('Income recorded'); onClose(); } catch (e) { setErr((e as Error).message); } }}>Confirm received</Button></div>
+          <Button onClick={async () => { if (!acc || !date || !amt) return setErr('Account, date and amount are required.'); try { const sal = t.related.find((r) => r.kind === 'salary'); if (sal) await confirmSalaryReceived(sal.id, { actualNet: amt, date, accountId: acc }); else await confirmExpected(t.id, acc, date, amt); toast('Recorded'); onClose(); } catch (e) { setErr((e as Error).message); } }}>Confirm</Button></div>
       </div>
     </Modal>
   );

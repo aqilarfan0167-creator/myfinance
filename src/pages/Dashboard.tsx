@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Info } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useFinance, type Finance } from '@/hooks/useData';
+import { useCommitments, useFinance, type Finance } from '@/hooks/useData';
+import { STATUS_META, summarizeOcc, unpaidLiquidCommitments, type OccView } from '@/domain/commitments';
 import { useT } from '@/lib/i18n';
 import { useUI } from '@/components/UIContext';
-import { Card, Empty, Loading, PageHeader, Select, Button, Modal } from '@/components/ui';
+import { Badge, Card, Empty, Loading, PageHeader, Select, Button, Modal } from '@/components/ui';
 import { DateInput } from '@/components/inputs';
 import { Stat } from '@/components/Stat';
 import { TxnRow } from '@/components/TxnRow';
@@ -18,7 +19,7 @@ const short = (c: number) => { const v = c / 100; return Math.abs(v) >= 1000 ? `
 const tip = { contentStyle: { borderRadius: 8, fontSize: 12 }, formatter: (v: number) => rm(v) };
 
 export default function Dashboard() {
-  const f = useFinance(); const t = useT(); const { openTxn, openAccount } = useUI();
+  const f = useFinance(); const cm = useCommitments(); const t = useT(); const { openTxn, openAccount } = useUI();
   const today = todayKL();
   const [period, setPeriod] = useState<'this' | 'last' | 'custom'>('this');
   const [custom, setCustom] = useState({ from: monthStart(today), to: today });
@@ -29,9 +30,9 @@ export default function Dashboard() {
     : period === 'last' ? { from: monthStart(addMonths(monthStart(today), -1)), to: monthEnd(addMonths(monthStart(today), -1)) } : custom;
   const filt = { ...range, accountIds: accountId ? [accountId] : undefined, categoryIds: categoryId ? [categoryId] : undefined };
 
-  const data = useMemo(() => f && build(f, filt, today), [f, JSON.stringify(filt), today]); // eslint-disable-line
-  if (!f || !data) return <Loading />;
-  const { s, trend, allowance, upcoming } = data; const p = f.position;
+  const data = useMemo(() => f && cm && build(f, cm.views, filt, today), [f, cm, JSON.stringify(filt), today]); // eslint-disable-line
+  if (!f || !cm || !data) return <Loading />;
+  const { s, trend, allowance, upcoming, occ, dueSoon } = data; const p = f.position;
 
   if (!f.accounts.length) return (
     <>
@@ -76,7 +77,17 @@ export default function Dashboard() {
         <Stat label="Needs / Wants" value={`${pct(s.needs, s.needs + s.wants)} / ${pct(s.wants, s.needs + s.wants)}`} sub={`${rm(s.needs)} / ${rm(s.wants)}`} />
       </div>
 
+      {cm.commitments.length > 0 && <Link to="/commitments" className="mt-3 grid grid-cols-3 gap-3">
+        <Stat label="Commitments paid" value={rm(occ.paid)} tone="green" sub={`${occ.counts.paid} of ${occ.counts.paid + occ.counts.partial + occ.counts.pending + occ.counts.upcoming + occ.counts.overdue} this month`} />
+        <Stat label="Pending" value={rm(occ.pending)} tone="blue" sub={`${occ.counts.pending + occ.counts.upcoming + occ.counts.partial} item(s)`} />
+        <Stat label="Overdue" value={rm(occ.overdue)} tone={occ.overdue ? 'red' : 'green'} sub={`${occ.counts.overdue} item(s)`} />
+      </Link>}
+
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+        {dueSoon.length > 0 && <Card title="Upcoming payments (14 days)" action={<Link to="/commitments" className="text-xs text-teal-700 hover:underline dark:text-teal-400">Manage</Link>}>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">{dueSoon.map((v) => (
+            <li key={v.id} className="flex items-center justify-between gap-2 py-2 text-sm"><span className="min-w-0 truncate">{fmtDate(v.dueDate)} · {v.commitment.name} <Badge tone={STATUS_META[v.status].tone}>{STATUS_META[v.status].label}</Badge></span><span className="tabular-nums font-medium">{rm(v.remaining)}</span></li>))}</ul>
+        </Card>}
         <Card title={t('Income vs Expenses')}>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={trend}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="m" fontSize={11} /><YAxis tickFormatter={short} fontSize={11} width={40} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 12 }} />
@@ -126,9 +137,9 @@ export default function Dashboard() {
       <Modal open={showCalc} onClose={() => setShowCalc(false)} title="Daily allowance calculation">
         <table className="w-full text-sm"><tbody className="[&_td]:py-1.5">
           <tr><td>Available liquid balance</td><td className="text-right tabular-nums">{rm(allowance.available)}</td></tr>
-          <tr><td>− Unpaid commitments <span className="text-xs text-slate-500">(Phase 2)</span></td><td className="text-right tabular-nums">{rm(allowance.unpaidCommitments)}</td></tr>
-          <tr><td>− Reserved savings <span className="text-xs text-slate-500">(Phase 3)</span></td><td className="text-right tabular-nums">{rm(allowance.reserved)}</td></tr>
-          <tr><td>− Planned essential expenses <span className="text-xs text-slate-500">(Phase 3)</span></td><td className="text-right tabular-nums">{rm(allowance.plannedEssentials)}</td></tr>
+          <tr><td>− Unpaid commitments due before payday</td><td className="text-right tabular-nums">{rm(allowance.unpaidCommitments)}</td></tr>
+          <tr><td>− Planned savings transfers <span className="text-xs text-slate-500">(goals: Phase 3)</span></td><td className="text-right tabular-nums">{rm(allowance.reserved)}</td></tr>
+          <tr><td>− Planned / expected expenses & repayments</td><td className="text-right tabular-nums">{rm(allowance.plannedEssentials)}</td></tr>
           <tr className="border-t font-semibold"><td>Spendable until payday</td><td className="text-right tabular-nums">{rm(allowance.spendable)}</td></tr>
           <tr><td>÷ Days until payday ({fmtDate(allowance.nextPayday)})</td><td className="text-right">{allowance.daysLeft}</td></tr>
           <tr className="border-t font-semibold"><td>Daily allowance</td><td className="text-right tabular-nums">{rm(allowance.perDay)}</td></tr>
@@ -142,7 +153,7 @@ export default function Dashboard() {
 
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '–');
 
-function build(f: Finance, filt: Parameters<typeof summarize>[2], today: string) {
+function build(f: Finance, views: OccView[], filt: Parameters<typeof summarize>[2], today: string) {
   const s = summarize(f.txns, f.accounts, filt);
   const trend = Array.from({ length: 6 }, (_, i) => {
     const ms = addMonths(monthStart(today), i - 5); const me = monthEnd(ms);
@@ -150,7 +161,16 @@ function build(f: Finance, filt: Parameters<typeof summarize>[2], today: string)
     const pos = computePosition(f.accounts, computeBalances(f.accounts, f.txns, me < today ? me : today));
     return { m: fmtMonth(ms.slice(0, 7), f.settings.language), income: x.income, expenses: x.netExpenses, savings: x.cashFlow, netWorth: pos.netWorth, debt: pos.liabilities };
   });
-  const allowance = dailyAllowance({ available: f.position.available, today, payDay: f.settings.payDay });
-  const upcoming = f.txns.filter((x) => !x.deletedAt && x.status === 'expected').sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
-  return { s, trend, allowance, upcoming };
+  // Daily allowance: deduct obligations due before next payday. Credit-card-paid items don't reduce liquid cash.
+  const np = dailyAllowance({ available: 0, today, payDay: f.settings.payDay }).nextPayday;
+  const beforePay = addDays(np, -1);
+  const accType = (id: string | null) => (id ? f.accMap.get(id)?.type : undefined);
+  const exp = f.txns.filter((x) => !x.deletedAt && x.status === 'expected' && x.date <= beforePay && accType(x.accountId) !== 'credit_card');
+  const planned = exp.filter((x) => x.type === 'expense' || (x.type === 'debt_repayment')).reduce((a, x) => a + x.amount, 0);
+  const reserved = exp.filter((x) => x.type === 'transfer' && ['savings', 'investment'].includes(accType(x.toAccountId) ?? '') && accType(x.accountId) !== 'savings').reduce((a, x) => a + x.amount + x.fee, 0);
+  const allowance = dailyAllowance({ available: f.position.available, today, payDay: f.settings.payDay, unpaidCommitments: unpaidLiquidCommitments(views, f.accounts, beforePay), plannedEssentials: planned, reserved });
+  const occ = summarizeOcc(views, monthStart(today), monthEnd(today), today);
+  const dueSoon = views.filter((v) => v.remaining > 0 && v.dueDate <= addDays(today, 14)).slice(0, 8);
+  const upcoming = f.txns.filter((x) => !x.deletedAt && x.status === 'expected' && x.type === 'income').sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+  return { s, trend, allowance, upcoming, occ, dueSoon };
 }

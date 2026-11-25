@@ -66,7 +66,89 @@ export interface Settings {
   payDay: number; // day of month salary arrives
   demoLoaded: boolean;
   merchantCategory: Record<string, string>; // learned merchant -> categoryId
+  salaryProfile: SalaryProfile;
 }
 
 export interface AuditEntry { id: string; at: string; entity: string; entityId: string; action: 'create' | 'update' | 'delete' | 'restore' | 'import'; before?: unknown; after?: unknown }
 export interface Meta { key: string; value: unknown }
+
+/* ---------------- Phase 2 ---------------- */
+export type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+export type DayType = 'normal' | 'rest' | 'public_holiday';
+
+export interface SalaryProfile {
+  company: string;
+  basic: Cents;
+  allowances: { name: string; amount: Cents }[];
+  /** Hourly OT base. Default (Employment Act 1955): basic ÷ 26 ÷ 8. */
+  hourlyRateOverride: Cents | null;
+  workDaysPerMonth: number;
+  hoursPerDay: number;
+  multipliers: Record<DayType, number>;
+  defaultAccountId: string | null;
+}
+
+export interface OTEntry extends Base {
+  date: string; start: string; end: string; breakMinutes: number;
+  dayType: DayType; multiplier: number; hourlyRate: Cents;
+  hours: number; // decimal hours (computed)
+  amount: Cents; // computed: hours × rate × multiplier
+  reason: string;
+  approval: 'pending' | 'approved' | 'rejected';
+  payment: 'unpaid' | 'paid';
+  salaryMonth: string; // YYYY-MM the OT is paid in
+}
+
+export interface SalaryRecord extends Base {
+  month: string; // YYYY-MM salary month
+  company: string;
+  basic: Cents;
+  allowances: { name: string; amount: Cents }[];
+  bonus: Cents; claims: Cents; incentives: Cents;
+  otAuto: boolean; ot: Cents; // ot = sum of OT log when otAuto
+  epf: Cents; socso: Cents; eis: Cents; pcb: Cents; unpaidLeave: Cents;
+  otherDeductions: { name: string; amount: Cents }[];
+  gross: Cents; totalDeductions: Cents; expectedNet: Cents;
+  actualNet: Cents | null;
+  expectedPayDate: string; paymentDate: string | null;
+  accountId: string | null;
+  status: 'expected' | 'received';
+  incomeTxnId: string | null;
+  remarks: string;
+  attachmentIds: string[];
+}
+
+export interface Commitment extends Base {
+  name: string;
+  kind: 'expense' | 'debt'; // debt → paid as debt repayment (not an expense)
+  categoryId: string | null;
+  amount: Cents;
+  startDate: string; // first due date; anchors the schedule
+  endDate: string | null;
+  frequency: Frequency;
+  accountId: string | null; // usual paying account
+  toAccountId: string | null; // credit card account when repaying a card
+  trackFrom: string; // occurrences generated from this date (avoids back-filling years)
+  active: boolean;
+  remarks: string;
+}
+
+export interface Occurrence {
+  id: string; // `${commitmentId}:${dueDate}` – deterministic, prevents duplicates
+  commitmentId: string;
+  dueDate: string;
+  amount: Cents;
+  amountOverridden: boolean;
+  skipped: boolean;
+  updatedAt: string;
+}
+
+export interface RecurringRule extends Base {
+  name: string;
+  template: Pick<Transaction, 'type' | 'amount' | 'fee' | 'categoryId' | 'accountId' | 'toAccountId' | 'merchant' | 'paymentMethod' | 'needWant' | 'remarks'>;
+  frequency: Frequency;
+  startDate: string; endDate: string | null;
+  autoPost: boolean; // true: becomes actual on its date; false: stays expected until confirmed
+  active: boolean;
+  trackFrom: string;
+}

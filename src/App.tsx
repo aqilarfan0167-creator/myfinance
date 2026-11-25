@@ -9,6 +9,9 @@ const Transactions = lazy(() => import('@/pages/Transactions'));
 const Accounts = lazy(() => import('@/pages/Accounts'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Backup = lazy(() => import('@/pages/Backup'));
+const Salary = lazy(() => import('@/pages/Salary'));
+const Commitments = lazy(() => import('@/pages/Commitments'));
+const CalendarPage = lazy(() => import('@/pages/Calendar'));
 const ComingSoon = lazy(() => import('@/pages/ComingSoon'));
 
 export default function App() {
@@ -23,6 +26,9 @@ export default function App() {
               <Route path="income" element={<Transactions key="inc" fixedType="income" />} />
               <Route path="expenses" element={<Transactions key="exp" fixedType="expense" />} />
               <Route path="accounts" element={<Accounts />} />
+              <Route path="salary" element={<Salary />} />
+              <Route path="commitments" element={<Commitments />} />
+              <Route path="calendar" element={<CalendarPage />} />
               <Route path="settings" element={<Settings />} />
               <Route path="backup" element={<Backup />} />
               <Route path="more" element={<MorePage />} />

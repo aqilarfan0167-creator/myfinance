@@ -5,6 +5,9 @@ import { DateInput, MoneyInput } from './inputs';
 import { useFinance } from '@/hooks/useData';
 import { useUI } from './UIContext';
 import { blankTxn, deleteTransaction, findDuplicates, saveTransaction, ValidationError, type TxnInput } from '@/db/repo';
+import { saveRule } from '@/db/commitmentRepo';
+import { FREQUENCIES } from '@/domain/schedule';
+import type { Frequency } from '@/db/types';
 import type { Transaction, TxnType } from '@/db/types';
 import { PAYMENT_METHODS, TXN_TYPES } from '@/lib/labels';
 import { formatRM } from '@/lib/money';
@@ -19,6 +22,7 @@ export function TransactionForm({ initialType = 'expense', edit, onClose }: { in
   const [errors, setErrors] = useState<string[]>([]);
   const [dupes, setDupes] = useState<Transaction[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [repeat, setRepeat] = useState<{ on: boolean; frequency: Frequency; endDate: string; autoPost: boolean }>({ on: false, frequency: 'monthly', endDate: '', autoPost: true });
   const set = <K extends keyof TxnInput>(k: K, v: TxnInput[K]) => setT((p) => ({ ...p, [k]: v }));
 
   const merchants = useMemo(() => [...new Set((f?.txns ?? []).filter((x) => !x.deletedAt && x.merchant).map((x) => x.merchant))].slice(0, 300), [f?.txns]);
@@ -45,7 +49,15 @@ export function TransactionForm({ initialType = 'expense', edit, onClose }: { in
       if (d.length) { setDupes(d); return; }
     }
     setBusy(true);
-    try { await saveTransaction(data, edit?.id); toast(edit ? 'Transaction updated' : 'Transaction saved'); onClose(); }
+    try {
+      if (!edit && repeat.on) {
+        // The rule's generator creates this first entry (and future ones) with deterministic IDs – no duplicates.
+        const { type, amount: a, fee, categoryId, accountId, toAccountId, merchant, paymentMethod, needWant, remarks } = data;
+        await saveRule({ name: data.name || data.merchant || 'Recurring', template: { type, amount: a, fee, categoryId, accountId, toAccountId, merchant, paymentMethod, needWant, remarks },
+          frequency: repeat.frequency, startDate: data.date, endDate: repeat.endDate || null, autoPost: repeat.autoPost, active: true });
+        toast('Recurring transaction created'); onClose(); return;
+      }
+      await saveTransaction(data, edit?.id); toast(edit ? 'Transaction updated' : 'Transaction saved'); onClose(); }
     catch (e) { setErrors(e instanceof ValidationError ? e.errors : [String((e as Error).message)]); }
     finally { setBusy(false); }
   }
@@ -119,6 +131,17 @@ export function TransactionForm({ initialType = 'expense', edit, onClose }: { in
               <option value="">—</option>{PAYMENT_METHODS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
             </Select>
           </Field>
+        )}
+        {!edit && ['income', 'expense', 'transfer', 'debt_repayment'].includes(t.type) && t.status === 'actual' && (
+          <div className="rounded-lg border border-slate-200 p-3 sm:col-span-2 dark:border-slate-700">
+            <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={repeat.on} onChange={(e) => setRepeat({ ...repeat, on: e.target.checked })} />Repeat this transaction</label>
+            {repeat.on && <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <Select value={repeat.frequency} onChange={(e) => setRepeat({ ...repeat, frequency: e.target.value as Frequency })} aria-label="Frequency">{FREQUENCIES.map((q) => <option key={q.v} value={q.v}>{q.label}</option>)}</Select>
+              <DateInput value={repeat.endDate} onChange={(v) => setRepeat({ ...repeat, endDate: v })} />
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={repeat.autoPost} onChange={(e) => setRepeat({ ...repeat, autoPost: e.target.checked })} />Auto-post</label>
+              <p className="text-xs text-slate-500 sm:col-span-3">End date optional. Auto-post records each one as actual on its date; otherwise they appear as expected for you to confirm. Manage under Commitments → Recurring.</p>
+            </div>}
+          </div>
         )}
         <Field label="Remarks" className="sm:col-span-2"><Textarea rows={2} value={t.remarks} onChange={(e) => set('remarks', e.target.value)} maxLength={2000} /></Field>
 

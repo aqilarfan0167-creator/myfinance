@@ -43,4 +43,11 @@ src/pages     feature screens
   - Choose **Debt Repayment** to pay a card. Pick the card as the destination so the purchases aren't counted twice.
   - Save income as **Expected** until it arrives, then press **Received**.
 - **Dashboard:** tap **Daily Allowance** to see how it is calculated. Set your salary day in Settings.
+- **Salary & OT:**
+  1. Fill in **Profile & OT rates**, then log your overtime.
+  2. Add a salary record each month. Use **Estimate EPF/SOCSO/EIS** for the deductions, then check them against your payslip.
+  3. When the money arrives, press **Confirm received**. This records the income once; confirming again only updates it.
+- **Commitments:** add rent, loans, PTPTN, insurance and bills. Choose "Debt repayment" for loans and credit cards. Use **Mark paid**, or link a payment you've already recorded. Unpaid amounts due before payday are deducted from your daily allowance.
+- **Recurring:** tick **Repeat** when adding a transaction, or manage them under Commitments → Recurring. Don't track the same bill both as a commitment and as a recurring transaction.
+- **Calendar:** shows month, week and day views of transactions, expected items and commitments due.
 - **Backup:** download a JSON backup regularly. Restoring shows a preview first and takes a safety snapshot of your current data.

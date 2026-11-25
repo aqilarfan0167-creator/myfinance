@@ -1,13 +1,13 @@
 import Dexie, { type Table } from 'dexie';
-import type { Account, Transaction, Category, Settings, AuditEntry, Meta } from './types';
+import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile } from './types';
 import { defaultCategories } from './seed';
 
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '0.2.0';
 /**
  * Schema history. NEVER edit or remove a past version; only append new ones.
  * Dexie upgrades are non-destructive: existing rows are preserved.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export class MyFinanceDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -16,6 +16,11 @@ export class MyFinanceDB extends Dexie {
   settings!: Table<Settings, string>;
   audit!: Table<AuditEntry, string>;
   meta!: Table<Meta, string>;
+  salaries!: Table<SalaryRecord, string>;
+  otEntries!: Table<OTEntry, string>;
+  commitments!: Table<Commitment, string>;
+  occurrences!: Table<Occurrence, string>;
+  recurring!: Table<RecurringRule, string>;
 
   constructor(name = 'myfinance') {
     super(name);
@@ -27,6 +32,17 @@ export class MyFinanceDB extends Dexie {
       audit: 'id, at, entity, entityId',
       meta: 'key',
     });
+    // v2 (Phase 2): additive only – existing data untouched.
+    this.version(2).stores({
+      salaries: 'id, month, status, updatedAt',
+      otEntries: 'id, date, salaryMonth, updatedAt',
+      commitments: 'id, active, updatedAt',
+      occurrences: 'id, commitmentId, dueDate',
+      recurring: 'id, active, updatedAt',
+    }).upgrade(async (tx) => {
+      await tx.table('settings').toCollection().modify((s: Settings) => { if (!s.salaryProfile) s.salaryProfile = defaultSalaryProfile(); });
+      await tx.table('meta').put({ key: 'schemaVersion', value: 2 });
+    });
     this.on('populate', async (tx) => {
       await tx.table('categories').bulkAdd(defaultCategories());
       await tx.table('settings').add(defaultSettings());
@@ -36,7 +52,11 @@ export class MyFinanceDB extends Dexie {
 }
 
 export const defaultSettings = (): Settings => ({
-  id: 'app', language: 'en', theme: 'system', payDay: 25, demoLoaded: false, merchantCategory: {},
+  id: 'app', language: 'en', theme: 'system', payDay: 25, demoLoaded: false, merchantCategory: {}, salaryProfile: defaultSalaryProfile(),
+});
+export const defaultSalaryProfile = (): SalaryProfile => ({
+  company: '', basic: 0, allowances: [], hourlyRateOverride: null, workDaysPerMonth: 26, hoursPerDay: 8,
+  multipliers: { normal: 1.5, rest: 2, public_holiday: 3 }, defaultAccountId: null,
 });
 
 export const db = new MyFinanceDB();
