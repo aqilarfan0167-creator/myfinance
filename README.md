@@ -14,13 +14,39 @@ npm run build      # production build in dist/ (copies the on-device OCR engine 
 The app works without any configuration and stores data in IndexedDB in your browser. The database starts empty; you can load demo data from **Settings**.
 
 ## Deploy
-`dist/` is a static site that can be hosted on Netlify, Vercel, Cloudflare Pages or similar. Configure an SPA fallback so every route serves `index.html`.
+`npm run build` produces a static site in `dist/`. You can host it on Netlify, Vercel, Cloudflare Pages, GitHub Pages or similar.
+- **HTTPS is required** for the live camera, the installable app (PWA), the service worker and system notifications.
+- **SPA fallback:** every route must serve `index.html`. Netlify: `/* /index.html 200`. Vercel: rewrites to `/index.html`.
+- **Updates:** users see "New version available – Update". Updating replaces app files only; data in IndexedDB is never touched. Database changes are additive, and a copy of the data is saved before any upgrade.
 
-## Supabase (optional, Phase 6)
-1. Create a project and run `supabase/migrations/0001_init.sql`.
-2. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Use the **anon** key only; never put the service-role key in the frontend.
+## Cloud sync with Supabase (optional)
+1. Create a Supabase project.
+2. In the SQL editor, run `supabase/migrations/20261126000000_sync.sql`. It is safe to re-run.
+3. Configure **Authentication → URL configuration**:
+   - Site URL = your app URL.
+   - Add `https://<your-app>/account` to Redirect URLs. This is needed for email confirmation and password reset.
+4. Provide the **anon/publishable** key, in either of two ways:
+   - put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env` before building, or
+   - enter them in the app under **Settings → Account & cloud sync**.
 
-Sync is not wired up yet; see DEVELOPMENT_PROGRESS.md.
+   Never use the service-role key; the app rejects it.
+
+**How sync works**
+- Records sync through one RLS-protected table, `sync_records`, using the RPC `sync_push`, which applies last-writer-wins on the server.
+- Files go to the private `attachments` bucket under `<user-id>/`.
+- Deletions sync as tombstones.
+- Sync runs on start, every 5 minutes, 15 s after changes, and when the app regains focus.
+- One device is bound to one account. Switching accounts requires a backup first and then clears the device.
+
+The relational SQL in `supabase/reference/` is documentation only and is not used by the app.
+
+## Tests
+```bash
+npm test             # 54 unit/integration tests (incl. real OCR, XLSX via openpyxl, PDF via pypdf, sync engine)
+npm run lint         # React hooks rules
+npm run test:smoke   # cold-loads all 22 pages × empty/demo × light/dark (needs `npx vite preview --port 4173`)
+```
+See `supabase/tests/README.md` to test the SQL migration and sync against PostgreSQL.
 
 ## Architecture
 ```
@@ -75,4 +101,10 @@ src/pages     feature screens
   - **Bell icon:** shows your reminders.
   - **Choosing reminders:** pick which ones you want under Notifications → Reminder settings, where you can also turn on system pop-ups.
   - **Timing:** reminders only appear while MyFinance is open.
-- **Backup:** download a JSON backup regularly. Restoring shows a preview first and takes a safety snapshot of your current data.
+- **Backup & Restore:**
+  - **Full backup:** download a **full backup (ZIP)** regularly. It includes receipts and payslips.
+  - **Restoring:** the backup is checked and previewed first, and you choose to merge or replace.
+  - **Folder backups:** on Chrome or Edge on a computer you can choose a folder for automatic daily backups.
+  - **CSV import:** import bank statements here; possible duplicates are unticked for you.
+- **Install the app:** go to Settings → About → Install, or use your browser's "Add to Home screen". After installing, the app works offline.
+- **Cloud sync:** go to Settings → Account & cloud sync. Sign in on both your laptop and your phone to keep them in sync. Restoring shows a preview first and takes a safety snapshot of your current data.

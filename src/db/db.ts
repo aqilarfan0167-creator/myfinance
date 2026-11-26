@@ -2,12 +2,12 @@ import Dexie, { type Table } from 'dexie';
 import type { Account, Transaction, Category, Settings, AuditEntry, Meta, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, SalaryProfile, Budget, Goal, GoalEntry, Task, Attachment, StoredFile, Receipt, AppNotification, NotificationPrefs } from './types';
 import { defaultCategories } from './seed';
 
-export const APP_VERSION = '0.5.0';
+export const APP_VERSION = '0.6.0';
 /**
  * Schema history. NEVER edit or remove a past version; only append new ones.
  * Dexie upgrades are non-destructive: existing rows are preserved.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export class MyFinanceDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -29,6 +29,8 @@ export class MyFinanceDB extends Dexie {
   files!: Table<StoredFile, string>;
   receipts!: Table<Receipt, string>;
   notifications!: Table<AppNotification, string>;
+  /** Per-record sync bookkeeping: content hash + timestamp last exchanged with the cloud. */
+  syncState!: Table<{ key: string; table: string; id: string; hash: string; stamp: string }, string>;
 
   constructor(name = 'myfinance') {
     super(name);
@@ -69,6 +71,8 @@ export class MyFinanceDB extends Dexie {
       await tx.table('settings').toCollection().modify((s: Settings) => { if (!s.notificationPrefs) s.notificationPrefs = defaultNotificationPrefs(); });
       await tx.table('meta').put({ key: 'schemaVersion', value: 5 });
     });
+    // v6 (Phase 6): additive only.
+    this.version(6).stores({ syncState: 'key, table' }).upgrade(async (tx) => { await tx.table('meta').put({ key: 'schemaVersion', value: 6 }); });
     this.on('populate', async (tx) => {
       await tx.table('categories').bulkAdd(defaultCategories());
       await tx.table('settings').add(defaultSettings());

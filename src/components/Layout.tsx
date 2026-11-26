@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db/db';
 import { NotificationRunner } from './NotificationRunner';
+import { useCloud } from '@/hooks/useCloud';
+import { UpdatePrompt } from './UpdatePrompt';
+import { Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NAV } from './nav';
 import { useT } from '@/lib/i18n';
@@ -20,7 +23,7 @@ export function applyTheme(theme: 'light' | 'dark' | 'system') {
 
 export function Layout() {
   const t = useT(); const { openTxn } = useUI(); const s = useSettings(); const loc = useLocation();
-  const [fab, setFab] = useState(false);
+  const [fab, setFab] = useState(false); const cloud = useCloud();
   const unread = useLiveQuery(() => db.notifications.filter((n) => !n.readAt && !n.dismissedAt && !n.resolvedAt).count(), []) ?? 0;
   // Print reports in light mode
   useEffect(() => {
@@ -56,12 +59,15 @@ export function Layout() {
             <QA onClick={() => openTxn({ type: 'transfer' })} icon={ArrowLeftRight} label={t('Transfer')} cls="text-transfer" />
           </div>
           <div className="flex items-center gap-1">
+          {cloud.config && <Link to="/account" title={cloud.session ? (cloud.status === 'error' ? `Sync problem: ${cloud.error}` : cloud.status === 'syncing' ? 'Syncing…' : 'Synced') : 'Not signed in – sync off'} aria-label="Cloud sync status" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+            {!cloud.session ? <CloudOff className="h-5 w-5 text-slate-400" /> : cloud.status === 'syncing' ? <RefreshCw className="h-5 w-5 animate-spin text-transfer" /> : <Cloud className={cloud.status === 'error' || cloud.needsBinding ? 'h-5 w-5 text-warn' : 'h-5 w-5 text-income'} />}</Link>}
           <Link to="/notifications" aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`} className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"><Bell className="h-5 w-5" />{unread > 0 && <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-expense px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}</Link>
           <button onClick={toggleTheme} aria-label="Toggle dark mode" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
           </div>
         </header>
         <main className="mx-auto max-w-7xl p-4 pb-28 lg:pb-8 print:p-0"><Outlet /></main>
         <NotificationRunner />
+        <UpdatePrompt />
       </div>
 
       {/* Mobile quick-add */}

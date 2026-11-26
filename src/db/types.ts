@@ -82,6 +82,7 @@ export interface Settings {
   merchantCategory: Record<string, string>; // learned merchant -> categoryId
   salaryProfile: SalaryProfile;
   notificationPrefs: NotificationPrefs;
+  updatedAt?: string;
 }
 
 export interface AuditEntry { id: string; at: string; entity: string; entityId: string; action: 'create' | 'update' | 'delete' | 'restore' | 'import'; before?: unknown; after?: unknown }

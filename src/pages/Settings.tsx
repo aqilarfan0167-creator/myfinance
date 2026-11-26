@@ -9,6 +9,8 @@ import { saveCategory, updateSettings } from '@/db/repo';
 import { loadDemo, clearDemo } from '@/db/demo';
 import type { Category } from '@/db/types';
 import { APP_VERSION, SCHEMA_VERSION } from '@/db/db';
+import { Link } from 'react-router-dom';
+import { InstallButton } from '@/components/InstallButton';
 
 export default function SettingsPage() {
   const f = useFinance(); const t = useT(); const { toast, confirm } = useUI();
@@ -53,7 +55,9 @@ export default function SettingsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400">Receipts and payslips are read <b>on this device</b> with Tesseract.js (English + Bahasa Melayu) and PDF.js. Files and text are never sent to a server. Free, no account needed.</p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400"><b>AI Vision (optional): not enabled.</b> Cloud AI can read difficult receipts more accurately, but it requires a secure backend you control, has per-image costs, and would send your financial documents to a third party. It will only be offered with an explicit opt-in and cost disclosure; no keys are ever stored in this app.</p>
         </Card>
-        <Card title="About"><p className="text-sm text-slate-500">MyFinance v{APP_VERSION} · database schema v{SCHEMA_VERSION} · storage: this device (IndexedDB). Cloud sync via Supabase is planned for Phase 6.</p></Card>
+        <Card title="Account, sync & backups"><p className="text-sm text-slate-600 dark:text-slate-400">Optional cloud sync between your devices, full backups with receipt files, CSV import and restore.</p>
+          <div className="mt-3 flex flex-wrap gap-2"><Link to="/account"><Button variant="secondary">Account & cloud sync</Button></Link><Link to="/backup"><Button variant="secondary">Backup & restore</Button></Link></div></Card>
+        <Card title="About"><p className="text-sm text-slate-500">MyFinance v{APP_VERSION} · database schema v{SCHEMA_VERSION} · data stored on this device (IndexedDB){' '}with optional Supabase sync.</p><InstallButton /></Card>
       </div>
       {editCat && <CategoryModal c={editCat} onClose={() => setEditCat(null)} />}
     </>

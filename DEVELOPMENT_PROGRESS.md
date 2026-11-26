@@ -96,19 +96,36 @@ Legend: [x] done & tested · [~] partial · [ ] not started
 - [x] Added cold-load smoke test (`npm run test:smoke`): 21 routes × empty/demo DB × light/dark = 84 loads, no errors
 - [x] Tests: 43 automated (periods, report maths & exclusions, mid-period accounts, insights triggers, notification dedupe/resolve/dismiss/prefs, CSV; XLSX validated with openpyxl; PDF validated with pypdf) + Playwright: downloads of PDF/Excel/CSV verified, period switching, print media, insights, notifications, permission
 
-## Phase 6 – ZIP backup with files, CSV import, Supabase auth + sync, PWA
+## Phase 6 – Backup, restore, migration, cloud sync, PWA ✅
+- [x] DB schema v6 (additive): syncState. Every version since v1 upgrades in place – verified v1 → v6 in a real browser
+- [x] Update safety: before any schema upgrade, a raw copy of all records is saved to a separate IndexedDB ("Before upgrade vX → vY", downloadable); boot order fixed so the upgrade can't race the snapshot; other tabs are told to reload instead of blocking upgrades
+- [x] Full ZIP backup: all records + original files, edited copies and thumbnails, manifest with SHA-256 checksums, README; verified before restore (damaged/foreign files rejected)
+- [x] Restore ZIP or JSON with preview (new/updated/kept/removed + files), merge or replace, safety snapshot first, files never deleted
+- [x] Backup history (downloads, folder backups), device snapshots (daily, pre-restore, pre-import), pre-upgrade snapshots
+- [x] Automatic backups to a user-chosen folder (File System Access API, Chrome/Edge desktop): daily ZIP, newest 10 kept, re-permission flow
+- [x] CSV import: delimiter/quote/BOM-aware parser, auto column mapping (bank statements, debit/credit, signed amounts, BM headers, MyFinance's own export round-trip), DMY/YMD/MDY, decimal commas, per-row validation, duplicate detection (existing + within file), atomic all-or-nothing import with snapshot
+- [x] Supabase: login, registration (email confirmation), password reset + new-password flow, logout; config via env or in-app (service-role/secret keys rejected)
+- [x] Sync engine: pull-then-push, server-side last-writer-wins RPC, monotonic server cursor (clock-skew safe), content-hash change detection, tombstones by reconciliation (catches all hard deletes), echo suppression, files to private storage, newer-schema guard, one-account-per-device binding (merge / use cloud / switch with backup)
+- [x] Migration `supabase/migrations/20261126000000_sync.sql`: RLS (select/insert/update own rows, no delete), RPC with future-timestamp rejection, private bucket with size/type limits and per-user folders; re-runnable
+- [x] PWA: manifest (icons incl. maskable, shortcuts), offline app shell (precache), OCR models cached on first use, install button / iOS instructions, update prompt
+- [x] Tests: 54 automated + 1 PostgreSQL integration test; 20 SQL security checks on real PostgreSQL 16 (RLS isolation, LWW, tombstones, anon lockout, storage folders, bucket private); Playwright: v1→v6 upgrade with snapshot, ZIP backup → restore on a fresh device (records + receipt image), CSV import, config validation & error handling, manifest, offline navigation; smoke test 88 cold loads
+- [x] Bugs found & fixed: sync echo overwrote local edits / resurrected deletes; fresh device's defaults could override cloud settings; CSV decimal commas read as thousands; pre-upgrade snapshot raced the upgrade
+
 ## Phase 7 – Full testing, security review, bug fixes
+
+## Not yet verified / needs external configuration
+- **Supabase cloud sync was not run against a hosted Supabase project** (no credentials in the dev environment). The SQL was tested on PostgreSQL 16 with a Supabase-compatible shim, and the sync engine was tested end-to-end against that database. The Supabase JS transport, Auth emails/redirects and Storage uploads need one real run (see README → Cloud sync).
+- Camera on a physical phone, HEIC photos from iPhone, and PWA install on real devices: not tested here.
+- Folder auto-backup needs Chrome/Edge desktop; tested by code review only (headless browsers can't show the folder picker).
 
 ## Known limitations (current)
 - Statutory figures are estimates for employees under 60; PCB is entered manually.
 - Recurring items are generated when the app is opened (no background job).
 - Loan projections assume a constant rate; flat-rate early-settlement rebates are not modelled. Card minimum payment is an estimate.
 - Simulator scenarios are not saved.
-- Receipt files are not in JSON backups yet (ZIP backup in Phase 6). OCR accuracy depends on photo quality; handwritten receipts are not supported.
+- OCR accuracy depends on photo quality; handwritten receipts are not supported.
 - HEIC conversion tested by code path only (no HEIC sample in automated tests). Live camera needs HTTPS (or localhost); tested with Chromium's fake camera, not a physical phone.
 - AI Vision API not implemented (optional; requires a backend).
 - Notifications only appear while MyFinance is open or reopened; true background/push reminders need a push service (not configured).
 - Report charts are not embedded in PDF exports (tables only); use Print for charts.
-- Data is stored only in this browser until Phase 6 (cloud sync). Download backups regularly.
 - Bahasa Melayu covers navigation and main labels; full translation is ongoing.
-- Modules marked "soon" in the sidebar are placeholders.

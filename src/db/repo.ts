@@ -145,4 +145,15 @@ export async function saveCategory(c: Omit<Category, 'id' | 'createdAt' | 'updat
   const rec: Category = { ...c, id: uid(), system: false, createdAt: t, updatedAt: t };
   await db.categories.add(rec); return rec.id;
 }
-export async function updateSettings(p: Partial<Settings>) { await db.settings.update('app', p); }
+export async function updateSettings(p: Partial<Settings>) { await db.settings.update('app', { ...p, updatedAt: new Date().toISOString() }); }
+
+/** Imports many transactions in ONE atomic transaction (all or nothing). */
+export async function importTransactions(items: TxnInput[], source: string): Promise<number> {
+  for (const [i, t] of items.entries()) { const e = validateTxn(t); if (e.length) throw new ValidationError([`Row ${i + 1}: ${e.join(' ')}`]); }
+  return db.transaction('rw', db.transactions, db.audit, async () => {
+    const t = now(); const recs: Transaction[] = items.map((x) => ({ ...x, id: uid(), createdAt: t, updatedAt: t, deletedAt: null }));
+    await db.transactions.bulkAdd(recs);
+    await audit({ entity: 'transaction', entityId: '*', action: 'import', after: { source, count: recs.length, ids: recs.map((r) => r.id) } });
+    return recs.length;
+  });
+}

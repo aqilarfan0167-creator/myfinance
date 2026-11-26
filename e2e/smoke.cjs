@@ -1,7 +1,7 @@
 // Cold-load smoke test: every route in a fresh browser profile (empty DB) and again with demo data, light & dark.
 // Usage: npm run build && npx vite preview --port 4173 & node e2e/smoke.cjs
 const { chromium } = require('playwright');
-const ROUTES = ['/', '/transactions', '/income', '/salary', '/expenses', '/scan', '/receipts', '/accounts', '/commitments', '/budget', '/savings', '/debts', '/simulator', '/calendar', '/tasks', '/insights', '/reports', '/notifications', '/settings', '/backup', '/more'];
+const ROUTES = ['/', '/transactions', '/income', '/salary', '/expenses', '/scan', '/receipts', '/accounts', '/commitments', '/budget', '/savings', '/debts', '/simulator', '/calendar', '/tasks', '/insights', '/reports', '/notifications', '/settings', '/backup', '/account', '/more'];
 const U = process.env.URL || 'http://localhost:4173';
 (async () => {
   const b = await chromium.launch(); let fails = 0;

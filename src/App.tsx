@@ -22,6 +22,7 @@ const Receipts = lazy(() => import('@/pages/Receipts'));
 const Reports = lazy(() => import('@/pages/Reports'));
 const Insights = lazy(() => import('@/pages/Insights'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
+const Account = lazy(() => import('@/pages/Account'));
 const ComingSoon = lazy(() => import('@/pages/ComingSoon'));
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="insights" element={<Insights />} />
               <Route path="notifications" element={<Notifications />} />
+              <Route path="account" element={<Account />} />
               <Route path="settings" element={<Settings />} />
               <Route path="backup" element={<Backup />} />
               <Route path="more" element={<MorePage />} />
