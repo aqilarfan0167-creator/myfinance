@@ -96,42 +96,42 @@ export default function Dashboard() {
             <li key={v.id} className="flex items-center justify-between gap-2 py-2 text-sm"><span className="min-w-0 truncate">{fmtDate(v.dueDate)} · {v.commitment.name} <Badge tone={STATUS_META[v.status].tone}>{STATUS_META[v.status].label}</Badge></span><span className="tabular-nums font-medium">{rm(v.remaining)}</span></li>))}</ul>
         </Card>}
         <Card title={t('Income vs Expenses')}>
-          <ResponsiveContainer width="100%" height={240}>
+          <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={240}>
             <BarChart data={trend}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="m" fontSize={11} /><YAxis tickFormatter={short} fontSize={11} width={40} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="income" name="Income" fill="#16a34a" radius={[4, 4, 0, 0]} /><Bar dataKey="expenses" name="Expenses" fill="#dc2626" radius={[4, 4, 0, 0]} /></BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></div></div>
         </Card>
         <Card title={t('Spending by Category')}>
           {s.byCategory.length ? (
             <div className="grid items-center gap-2 sm:grid-cols-2">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart><Pie data={s.byCategory.filter((x) => x.amount > 0)} dataKey="amount" nameKey="categoryId" innerRadius={50} outerRadius={85} paddingAngle={1} isAnimationActive={false}>
+              <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={220}>
+                <PieChart><Pie rootTabIndex={-1} data={s.byCategory.filter((x) => x.amount > 0)} dataKey="amount" nameKey="categoryId" innerRadius={50} outerRadius={85} paddingAngle={1} isAnimationActive={false}>
                   {s.byCategory.map((c) => <Cell key={c.categoryId} fill={f.catMap.get(c.categoryId)?.color ?? '#94a3b8'} />)}</Pie>
                   <Tooltip contentStyle={tip.contentStyle} formatter={(v: number, n: string) => [rm(v), catName(n)]} /></PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></div></div>
               <ul className="space-y-1 text-xs">{s.byCategory.slice(0, 8).map((c) => (
                 <li key={c.categoryId} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ background: f.catMap.get(c.categoryId)?.color }} /><span className="flex-1 truncate">{catName(c.categoryId)}</span><span className="tabular-nums">{rm(c.amount)}</span></li>))}</ul>
             </div>
           ) : <Empty title="No spending in this period" />}
         </Card>
         <Card title={t('Daily Spending')}>
-          <ResponsiveContainer width="100%" height={200}>
+          <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={200}>
             <BarChart data={dailyData}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="d" fontSize={10} interval="preserveStartEnd" /><YAxis tickFormatter={short} fontSize={11} width={40} /><Tooltip {...tip} labelFormatter={(l) => `Day ${l}`} />
               <Bar dataKey="v" name="Spent" fill="#f97316" radius={[3, 3, 0, 0]} /></BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></div></div>
         </Card>
         <Card title="Net Worth & Debt Trend">
-          <ResponsiveContainer width="100%" height={200}>
+          <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={200}>
             <LineChart data={trend}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="m" fontSize={11} /><YAxis tickFormatter={short} fontSize={11} width={40} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 12 }} />
               <Line dataKey="netWorth" name="Net worth" stroke="#9333ea" strokeWidth={2} dot={false} /><Line dataKey="debt" name="Debt" stroke="#dc2626" strokeWidth={2} dot={false} /><Line dataKey="savings" name="Savings (cash flow)" stroke="#2563eb" strokeWidth={2} dot={false} /></LineChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></div></div>
         </Card>
         <Card title={t('Needs vs Wants')}>
           {s.needs + s.wants + s.unclassified > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart><Pie data={[{ n: 'Needs', v: s.needs }, { n: 'Wants', v: s.wants }, { n: 'Unclassified', v: s.unclassified }].filter((x) => x.v > 0)} dataKey="v" nameKey="n" outerRadius={75} label={(e) => e.n} isAnimationActive={false}>
+            <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={200}>
+              <PieChart><Pie rootTabIndex={-1} data={[{ n: 'Needs', v: s.needs }, { n: 'Wants', v: s.wants }, { n: 'Unclassified', v: s.unclassified }].filter((x) => x.v > 0)} dataKey="v" nameKey="n" outerRadius={75} label={(e) => e.n} isAnimationActive={false}>
                 <Cell fill="#0f766e" /><Cell fill="#f43f5e" /><Cell fill="#94a3b8" /></Pie><Tooltip {...tip} /></PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></div></div>
           ) : <Empty title="No classified spending" />}
         </Card>
         <Card title={t('Recent Transactions')} action={<Link to="/transactions" className="text-xs text-teal-700 hover:underline dark:text-teal-400">View all</Link>}>
@@ -140,11 +140,11 @@ export default function Dashboard() {
         </Card>
         {budget.lines.length > 0 && <Card title="Budgets this month" action={<Link to="/budget" className="text-xs text-teal-700 hover:underline dark:text-teal-400">Manage</Link>}>
           <ul className="space-y-2.5">{budget.lines.slice(0, 6).map((l) => (
-            <li key={l.categoryId} className="text-sm"><div className="mb-1 flex justify-between"><span className="truncate">{catName(l.categoryId)}</span><span className="tabular-nums text-xs">{rm(l.spent)} / {rm(l.allocated)}</span></div><Progress value={l.pct} tone={l.level} /></li>))}</ul>
+            <li key={l.categoryId} className="text-sm"><div className="mb-1 flex justify-between"><span className="truncate">{catName(l.categoryId)}</span><span className="tabular-nums text-xs">{rm(l.spent)} / {rm(l.allocated)}</span></div><Progress value={l.pct} tone={l.level} label={`${catName(l.categoryId)} budget used`} /></li>))}</ul>
         </Card>}
         {goals.views.some((g) => g.status === 'active') && <Card title={t('Savings Goals')} action={<Link to="/savings" className="text-xs text-teal-700 hover:underline dark:text-teal-400">View</Link>}>
           <ul className="space-y-2.5">{goals.views.filter((g) => g.status === 'active').sort((a, b) => a.priority - b.priority).slice(0, 5).map((g) => (
-            <li key={g.id} className="text-sm"><div className="mb-1 flex justify-between"><span className="truncate">{g.name}</span><span className="tabular-nums text-xs">{rm(g.saved)} / {rm(g.target)}</span></div><Progress value={g.progress} tone="purple" /></li>))}</ul>
+            <li key={g.id} className="text-sm"><div className="mb-1 flex justify-between"><span className="truncate">{g.name}</span><span className="tabular-nums text-xs">{rm(g.saved)} / {rm(g.target)}</span></div><Progress value={g.progress} tone="purple" label={`${g.name} progress`} /></li>))}</ul>
         </Card>}
         {openTasks.length > 0 && <Card title="Tasks due soon" action={<Link to="/tasks" className="text-xs text-teal-700 hover:underline dark:text-teal-400">All tasks</Link>}>
           <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">{openTasks.slice(0, 6).map((x) => <li key={x.id} className="flex justify-between gap-2 py-2"><span className="truncate">{x.name}</span><span className={isOverdueTask(x, today) ? 'text-expense' : 'text-slate-500'}>{fmtDate(x.dueDate!)}</span></li>)}</ul>

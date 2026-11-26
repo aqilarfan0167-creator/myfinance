@@ -1,5 +1,6 @@
 import { db } from '@/db/db';
 import { computeNotifications, mergeNotifications, type NotifInput } from '@/domain/notifications';
+import { safeLink } from './security';
 
 /** Syncs current reminders into the notifications table; returns the ones that are new. */
 export async function syncNotifications(input: Omit<NotifInput, 'lastBackup' | 'firstUse'>) {
@@ -18,6 +19,6 @@ export function showSystem(title: string, body: string, link: string) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   try {
     const n = new Notification(title, { body, icon: '/icon.svg', tag: title });
-    n.onclick = () => { window.focus(); window.history.pushState({}, '', link); window.dispatchEvent(new PopStateEvent('popstate')); n.close(); };
+    n.onclick = () => { window.focus(); window.history.pushState({}, '', safeLink(link)); window.dispatchEvent(new PopStateEvent('popstate')); n.close(); };
   } catch { /* some mobile browsers only allow notifications from a service worker */ }
 }

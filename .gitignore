@@ -4,3 +4,6 @@ dist
 .env.local
 *.log
 public/ocr
+public/heic/heic2any.min.js
+/*.png
+coverage/

@@ -1,0 +1,13 @@
+# Netlify / Cloudflare Pages. The Content-Security-Policy lives in <meta> tags (index.html and heic/index.html) so it
+# works on any host and the sandboxed HEIC converter can keep its own policy.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+/sw.js
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

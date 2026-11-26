@@ -22,11 +22,38 @@ export async function sha256(blob: Blob): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** HEIC/HEIF → JPEG (browsers other than Safari can't display HEIC). Loaded on demand. */
-export async function heicToJpeg(blob: Blob): Promise<Blob> {
-  const { default: heic2any } = await import('heic2any');
-  const out = await heic2any({ blob, toType: 'image/jpeg', quality: 0.92 });
-  return Array.isArray(out) ? out[0] : out;
+/**
+ * HEIC/HEIF → JPEG. Safari decodes HEIC natively; elsewhere the converter runs in a sandboxed iframe
+ * (opaque origin, its own CSP) so the app itself never needs 'unsafe-eval'. Times out instead of hanging.
+ */
+export async function heicToJpeg(blob: Blob, timeoutMs = 45000): Promise<Blob> {
+  try { const bmp = await createImageBitmap(blob); const c = canvas(bmp.width, bmp.height); c.getContext('2d')!.drawImage(bmp, 0, 0); bmp.close(); return await toBlob(c, 'image/jpeg', 0.92); }
+  catch { /* not natively supported – use the sandboxed converter */ }
+  const frame = await heicFrame();
+  return new Promise<Blob>((resolve, reject) => {
+    const id = crypto.randomUUID();
+    const timer = setTimeout(() => { window.removeEventListener('message', onMsg); reject(new Error('HEIC conversion timed out')); }, timeoutMs);
+    function onMsg(e: MessageEvent) {
+      if (e.source !== frame.contentWindow || e.data?.id !== id) return;
+      clearTimeout(timer); window.removeEventListener('message', onMsg);
+      if (e.data.ok && e.data.blob instanceof Blob && e.data.blob.type === 'image/jpeg') resolve(e.data.blob); else reject(new Error(e.data.error || 'HEIC conversion failed'));
+    }
+    window.addEventListener('message', onMsg);
+    frame.contentWindow!.postMessage({ id, blob }, '*');
+  });
+}
+let framePromise: Promise<HTMLIFrameElement> | null = null;
+function heicFrame(): Promise<HTMLIFrameElement> {
+  if (!framePromise) framePromise = new Promise((resolve, reject) => {
+    const f = document.createElement('iframe');
+    f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('aria-hidden', 'true'); f.title = 'HEIC converter';
+    f.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden';
+    const t = setTimeout(() => { framePromise = null; reject(new Error('HEIC converter did not load')); }, 15000);
+    const ready = (e: MessageEvent) => { if (e.source === f.contentWindow && e.data?.heicBridgeReady) { clearTimeout(t); window.removeEventListener('message', ready); resolve(f); } };
+    window.addEventListener('message', ready);
+    f.src = `${import.meta.env.BASE_URL}heic/index.html`; document.body.appendChild(f);
+  });
+  return framePromise;
 }
 
 async function bitmap(blob: Blob): Promise<ImageBitmap> {

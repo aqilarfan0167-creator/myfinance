@@ -42,7 +42,7 @@ export default function SettingsPage() {
               <h3 className="mb-2 text-xs font-semibold uppercase text-slate-500">{k}</h3>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {f.cats.filter((c) => c.kind === k).map((c) => (
-                  <button key={c.id} onClick={() => setEditCat(c)} className={`flex items-center gap-2 rounded-lg border border-slate-200 p-2 text-left text-sm hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${c.archived ? 'opacity-50' : ''}`}>
+                  <button key={c.id} onClick={() => setEditCat(c)} className={`flex items-center gap-2 rounded-lg border border-slate-200 p-2 text-left text-sm hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${c.archived ? 'text-slate-500 line-through' : ''}`}>
                     <IconBadge name={c.icon} color={c.color} /><span className="flex-1 truncate">{s.language === 'ms' && c.nameMs ? c.nameMs : c.name}</span>
                     {c.needWant && <Badge tone={c.needWant === 'need' ? 'green' : 'orange'}>{c.needWant}</Badge>}{!c.system && <Badge tone="blue">custom</Badge>}{c.archived && <Badge>archived</Badge>}
                   </button>

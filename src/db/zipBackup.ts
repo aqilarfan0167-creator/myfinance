@@ -42,7 +42,15 @@ export interface ParsedZip { file: BackupFile; manifest: ZipManifest; blobs: Map
 /** Opens and verifies a ZIP backup (checksums, structure, schema) without changing anything. */
 export async function readZip(bytes: Uint8Array): Promise<ParsedZip> {
   let entries: Record<string, Uint8Array>;
-  try { entries = unzipSync(bytes); } catch { throw new Error('This is not a valid ZIP file.'); }
+  // Limits checked from the ZIP directory BEFORE decompressing (protects against zip bombs).
+  let total = 0, count = 0; const MAX_ENTRY = 100 * 1048576, MAX_TOTAL = 2048 * 1048576, MAX_FILES = 20000;
+  try {
+    entries = unzipSync(bytes, { filter: (f) => {
+      total += f.originalSize; count++;
+      if (f.originalSize > MAX_ENTRY || total > MAX_TOTAL || count > MAX_FILES) throw new Error('LIMIT');
+      return f.name === 'manifest.json' || f.name === 'data.json' || (/^files\/[A-Za-z0-9-]{1,100}\/(original|processed|thumb)\.[a-z0-9]{2,5}$/.test(f.name));
+    } });
+  } catch (e) { throw new Error((e as Error).message === 'LIMIT' ? 'Backup is larger than allowed (100 MB per file, 2 GB total) – not opened.' : 'This is not a valid ZIP file.'); }
   if (!entries['manifest.json'] || !entries['data.json']) throw new Error('Not a MyFinance backup (manifest.json or data.json missing).');
   let manifest: ZipManifest; try { manifest = JSON.parse(strFromU8(entries['manifest.json'])); } catch { throw new Error('Backup manifest is damaged.'); }
   if (manifest.app !== 'MyFinance' || manifest.format !== 'myfinance-zip') throw new Error('Not a MyFinance backup.');

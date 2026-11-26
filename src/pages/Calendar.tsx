@@ -73,7 +73,7 @@ export default function CalendarPage() {
         <span className="min-w-36 text-center font-semibold">{label}</span>
         <Button variant="secondary" aria-label="Next" onClick={() => step(1)}><ChevronRight className="h-4 w-4" /></Button>
         <Button variant="ghost" onClick={() => setCursor(today)}>Today</Button>
-        <div className="flex flex-wrap gap-2 text-xs sm:ml-auto">{LEGEND.map((l) => <button key={l.k} onClick={() => toggle(l.k)} className={cn('flex items-center gap-1', hidden.has(l.k) && 'opacity-40 line-through')}><span className={cn('h-2.5 w-2.5 rounded-full', DOT[l.k])} />{l.label}</button>)}</div>
+        <div className="flex flex-wrap gap-2 text-xs sm:ml-auto">{LEGEND.map((l) => <button key={l.k} onClick={() => toggle(l.k)} aria-pressed={!hidden.has(l.k)} className={cn('flex items-center gap-1', hidden.has(l.k) && 'text-slate-500 line-through')}><span className={cn('h-2.5 w-2.5 rounded-full', DOT[l.k])} />{l.label}</button>)}</div>
       </div>
 
       {view === 'month' && <>
@@ -83,7 +83,7 @@ export default function CalendarPage() {
             {cells.map((d) => {
               const ev = evOf(d); const inM = d.slice(0, 7) === ms.slice(0, 7);
               return (
-                <button key={d} onClick={() => setCursor(d)} className={cn('min-h-16 bg-white p-1 text-left align-top sm:min-h-24 dark:bg-slate-900', !inM && 'opacity-40', d === cursor && 'ring-2 ring-inset ring-teal-600')}>
+                <button key={d} onClick={() => setCursor(d)} className={cn('min-h-16 p-1 text-left align-top sm:min-h-24', inM ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-950', d === cursor && 'ring-2 ring-inset ring-teal-600')}>
                   <span className={cn('inline-flex h-6 w-6 items-center justify-center rounded-full text-xs', d === today && 'bg-teal-700 font-bold text-white')}>{Number(d.slice(8))}</span>
                   <div className="mt-0.5 flex flex-wrap gap-0.5 sm:hidden">{ev.slice(0, 6).map((e) => <span key={e.id} className={cn('h-1.5 w-1.5 rounded-full', DOT[e.kind])} />)}</div>
                   <div className="hidden space-y-0.5 sm:block">{ev.slice(0, 3).map((e) => <div key={e.id} className={cn('truncate rounded px-1 text-[11px]', CHIP[e.kind])}>{e.title}</div>)}{ev.length > 3 && <div className="text-[11px] text-slate-500">+{ev.length - 3} more</div>}</div>

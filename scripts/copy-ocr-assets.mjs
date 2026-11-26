@@ -9,4 +9,6 @@ for (const l of ['eng', 'msa']) {
   if (!existsSync(src)) throw new Error(`Missing language data ${src}`);
   cpSync(src, `${out}/lang/${l}.traineddata.gz`);
 }
-console.log('OCR assets copied to', out);
+mkdirSync('public/heic', { recursive: true });
+cpSync('node_modules/heic2any/dist/heic2any.min.js', 'public/heic/heic2any.min.js'); // run inside the sandboxed converter frame only
+console.log('OCR & HEIC assets copied');

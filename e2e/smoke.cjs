@@ -18,5 +18,10 @@ const U = process.env.URL || 'http://localhost:4173';
     }
     await ctx.close();
   }
-  console.log(fails ? `${fails} failure(s)` : `All ${ROUTES.length * 4} cold loads OK`); await b.close(); process.exit(fails ? 1 : 0);
+  // Phone width (iPhone 12/13/14) with demo data: no page may scroll sideways
+  const m = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const mp = await m.newPage();
+  await mp.goto(U + '/settings'); await mp.click('text=Load demo data'); await mp.waitForSelector('text=Remove demo data', { timeout: 30000 });
+  for (const r of ROUTES) { await mp.goto(U + r); await mp.waitForTimeout(700); const sw = await mp.evaluate(() => document.documentElement.scrollWidth);
+    if (sw > 390) { fails++; console.log(`FAIL mobile ${r}: page is ${sw}px wide`); } }
+  console.log(fails ? `${fails} failure(s)` : `All ${ROUTES.length * 4} cold loads OK; no horizontal overflow on ${ROUTES.length} pages at 390px`); await b.close(); process.exit(fails ? 1 : 0);
 })();

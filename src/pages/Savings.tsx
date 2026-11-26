@@ -66,7 +66,7 @@ function GoalCard({ v, f, entries, onEdit, onEntry }: { v: GoalView; f: Finance;
         <Button variant="ghost" onClick={onEdit} aria-label="Edit goal"><Pencil className="h-4 w-4" /></Button>
       </div>
       <div className="mt-3 flex items-baseline justify-between"><span className="text-xl font-bold tabular-nums text-saving">{rm(v.saved)}</span><span className="text-sm text-slate-500">of {rm(v.target)}</span></div>
-      <Progress value={v.progress} tone="purple" className="mt-1 h-3" />
+      <Progress value={v.progress} tone="purple" className="mt-1 h-3" label={`${v.name} progress`} />
       <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
         <span>Progress: <b>{Math.round(v.progress * 100)}%</b></span><span>Remaining: <b>{rm(v.remaining)}</b></span>
         <span>Plan: <b>{rm(v.monthlyContribution)}</b>/mo</span><span>This month: <b>{rm(v.thisMonth)}</b></span>

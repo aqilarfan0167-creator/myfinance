@@ -12,6 +12,7 @@ import { updateSettings } from '@/db/repo';
 import type { AppNotification, NotificationPrefs } from '@/db/types';
 import { fmtDateTime } from '@/lib/date';
 import { cn } from '@/lib/cn';
+import { safeLink } from '@/lib/security';
 
 const now = () => new Date().toISOString();
 const markRead = (ids: string[]) => db.notifications.where('id').anyOf(ids).modify({ readAt: now() });
@@ -63,7 +64,7 @@ function Row({ n }: { n: AppNotification }) {
   return (
     <li className={cn('flex items-start gap-3 py-3', !n.readAt && !n.resolvedAt && !n.dismissedAt && 'font-medium')}>
       {n.readAt || n.resolvedAt || n.dismissedAt ? <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" /> : <Bell className={cn('mt-0.5 h-4 w-4 shrink-0', n.severity === 'alert' ? 'text-expense' : n.severity === 'warning' ? 'text-warn' : 'text-transfer')} />}
-      <Link to={n.link} onClick={() => markRead([n.id])} className="min-w-0 flex-1 hover:underline">
+      <Link to={safeLink(n.link, '/notifications')} onClick={() => markRead([n.id])} className="min-w-0 flex-1 hover:underline">
         <p className="text-sm">{n.title} {n.resolvedAt && <Badge tone="green">resolved</Badge>}{n.dismissedAt && <Badge>dismissed</Badge>}</p>
         <p className="text-xs font-normal text-slate-500">{n.body} · {fmtDateTime(n.createdAt)}</p>
       </Link>

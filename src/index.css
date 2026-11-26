@@ -15,3 +15,11 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
   body { background: #fff !important; }
   section, .break-inside-avoid { break-inside: avoid; box-shadow: none !important; }
 }
+
+/* Accessible text colours – WCAG 2.1 AA (≥ 4.5:1) on every background they appear on (verified with axe-core).
+   Fills (bars, dots, buttons) keep the brand palette; only text is adjusted. */
+.text-slate-400, .text-slate-500 { color: #526076; }
+.text-income { color: #15803d; } .text-expense { color: #b91c1c; } .text-warn { color: #c2410c; } .text-transfer { color: #1d4ed8; } .text-saving { color: #7e22ce; }
+.dark .text-slate-400, .dark .text-slate-500 { color: #a3aebf; }
+.dark .text-income { color: #4ade80; } .dark .text-expense { color: #f87171; } .dark .text-warn { color: #fb923c; } .dark .text-transfer { color: #60a5fa; } .dark .text-saving { color: #c084fc; }
+.sr-only-focusable:focus { position: static; width: auto; height: auto; clip: auto; }

@@ -74,20 +74,20 @@ export default function BudgetPage() {
                   <div className="w-36"><BudgetInput key={`${month}:${l.categoryId}`} value={l.allocated} onSave={(v) => setBudget(month, l.categoryId, v)} /></div>
                   <button aria-label="Remove budget" className="p-1 text-slate-400 hover:text-red-600" onClick={() => setBudget(month, l.categoryId, null)}><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <div className="mt-2 flex items-center gap-2"><Progress value={l.pct} tone={l.level} /><span className={`w-12 text-right text-xs font-medium ${LEVEL_TEXT[l.level]}`}>{Math.round(l.pct * 100)}%</span></div>
+                <div className="mt-2 flex items-center gap-2"><Progress value={l.pct} tone={l.level} label={`${name(l.categoryId)} budget used`} /><span className={`w-12 text-right text-xs font-medium ${LEVEL_TEXT[l.level]}`}>{Math.round(l.pct * 100)}%</span></div>
               </div>);
           })}</div> : <Empty title="No budgets for this month">Add categories above, or copy last month's budgets.</Empty>}
           <p className="mt-3 text-xs text-slate-500">Spent = expenses minus refunds for the month (transfer fees count under Bank & Transfer Fees). Green below 70%, orange 70–99%, red 100%+.</p>
         </Card>
         <div className="space-y-4">
           {lines.length > 0 && <Card title="Allocated vs spent">
-            <ResponsiveContainer width="100%" height={Math.max(160, lines.length * 34)}>
+            <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={Math.max(160, lines.length * 34)}>
               <BarChart data={lines.map((l) => ({ n: name(l.categoryId), a: l.allocated, s: l.spent }))} layout="vertical" margin={{ left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis type="number" fontSize={10} tickFormatter={(v) => `${Math.round(v / 100)}`} /><YAxis type="category" dataKey="n" width={90} fontSize={10} />
                 <Tooltip formatter={(v: number) => rm(v)} /><Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="a" name="Allocated" fill="#cbd5e1" isAnimationActive={false} /><Bar dataKey="s" name="Spent" fill="#0f766e" isAnimationActive={false} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></div></div>
           </Card>}
           {unbudgeted.length > 0 && <Card title="Spending without a budget">
             <ul className="text-sm">{unbudgeted.map((u) => <li key={u.categoryId} className="flex items-center justify-between py-1"><span>{name(u.categoryId)}</span><span className="flex items-center gap-2 tabular-nums">{rm(u.amount)}

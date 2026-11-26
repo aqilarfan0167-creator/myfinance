@@ -46,8 +46,8 @@ export default function SalaryPage() {
           <Stat label="Difference" value={latest.actualNet != null ? formatRM(latest.actualNet - latest.expectedNet, { sign: true }) : '—'} tone={latest.actualNet != null && latest.actualNet < latest.expectedNet ? 'red' : 'green'} />
         </div>}
         {chart.length > 0 && <Card title="Expected vs actual net salary" className="mb-4">
-          <ResponsiveContainer width="100%" height={220}><BarChart data={chart}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="m" fontSize={11} /><YAxis fontSize={11} width={45} tickFormatter={(v) => `${(v / 100000).toFixed(1)}k`} /><Tooltip formatter={(v: number) => rm(v)} /><Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="expected" name="Expected" fill="#93c5fd" radius={[4, 4, 0, 0]} isAnimationActive={false} /><Bar dataKey="actual" name="Actual" fill="#16a34a" radius={[4, 4, 0, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer>
+          <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={220}><BarChart data={chart}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="m" fontSize={11} /><YAxis fontSize={11} width={45} tickFormatter={(v) => `${(v / 100000).toFixed(1)}k`} /><Tooltip formatter={(v: number) => rm(v)} /><Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey="expected" name="Expected" fill="#93c5fd" radius={[4, 4, 0, 0]} isAnimationActive={false} /><Bar dataKey="actual" name="Actual" fill="#16a34a" radius={[4, 4, 0, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer></div></div>
         </Card>}
         <Card title="Salary history">
           {sorted.length ? <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">

@@ -10,6 +10,7 @@
 import type { MyFinanceDB } from '@/db/db';
 import { SCHEMA_VERSION } from '@/db/db';
 import { TABLES } from '@/db/backup';
+import { checkRecord } from '@/lib/security';
 
 export const SYNC_TABLES = TABLES as readonly string[];
 export interface RemoteRow { table: string; id: string; data: Record<string, unknown> | null; updatedAt: string; deleted: boolean; seq: number; schema: number }
@@ -22,7 +23,7 @@ export interface Remote {
   getFile(path: string): Promise<Blob | null>;
   removeFiles(paths: string[]): Promise<void>;
 }
-export interface SyncResult { pulled: number; pushed: number; deletedLocal: number; deletedRemote: number; conflicts: number; filesUp: number; filesDown: number; at: string }
+export interface SyncResult { rejected: number; pulled: number; pushed: number; deletedLocal: number; deletedRemote: number; conflicts: number; filesUp: number; filesDown: number; at: string }
 export class SchemaTooNewError extends Error { constructor(public remote: number) { super(`Your cloud data was saved by a newer version of MyFinance (schema ${remote}). Update this app before syncing.`); } }
 
 /** cyrb53 – fast 53-bit string hash (change detection only, not security). */
@@ -45,7 +46,7 @@ export function syncOnce(db: MyFinanceDB, remote: Remote, now: () => string = ()
 }
 
 async function doSync(db: MyFinanceDB, remote: Remote, now: () => string): Promise<SyncResult> {
-  const res: SyncResult = { pulled: 0, pushed: 0, deletedLocal: 0, deletedRemote: 0, conflicts: 0, filesUp: 0, filesDown: 0, at: now() };
+  const res: SyncResult = { rejected: 0, pulled: 0, pushed: 0, deletedLocal: 0, deletedRemote: 0, conflicts: 0, filesUp: 0, filesDown: 0, at: now() };
   const tables = SYNC_TABLES.map((t) => db.table(t));
 
   // ---------- PULL ----------
@@ -71,7 +72,7 @@ async function doSync(db: MyFinanceDB, remote: Remote, now: () => string): Promi
           await tbl.delete(r.id); if (r.table === 'attachments') await db.files.delete(r.id);
           await db.syncState.delete(k); res.deletedLocal++; continue;
         }
-        if (!r.data || (r.data as Rec).id !== r.id) continue; // malformed – ignore
+        if (!r.data || (r.data as Rec).id !== r.id || checkRecord(r.table, r.data)) { res.rejected++; continue; } // malformed – never stored
         if (local && changed) { res.conflicts++; if (localStamp > r.updatedAt) continue; } // local newer → keep & push later
         if (!local || changed || hash(local) !== hash(r.data)) { await tbl.put(r.data); res.pulled++; }
         await db.syncState.put({ key: k, table: r.table, id: r.id, hash: hash(r.data), stamp: r.updatedAt });

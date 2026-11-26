@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n';
 import { Card, Loading, PageHeader } from '@/components/ui';
 import { buildInsights, type Insight } from '@/domain/insights';
 import { cn } from '@/lib/cn';
+import { safeLink } from '@/lib/security';
 
 const SEV = {
   alert: { icon: AlertOctagon, cls: 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30', ic: 'text-expense', label: 'Needs attention' },
@@ -29,7 +30,7 @@ export default function InsightsPage() {
             <div key={i.id} className={cn('flex gap-3 rounded-xl border p-4', m.cls)}>
               <m.icon className={cn('mt-0.5 h-5 w-5 shrink-0', m.ic)} />
               <div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-wide text-slate-500">{KIND[i.kind]}</p><p className="font-semibold">{i.title}</p><p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{i.detail}</p>
-                {i.link && <Link to={i.link} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline dark:text-teal-400">View <ArrowRight className="h-3 w-3" /></Link>}</div>
+                {i.link && <Link to={safeLink(i.link)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline dark:text-teal-400">View <ArrowRight className="h-3 w-3" /></Link>}</div>
             </div>))}</div></section>); })}</div>
       <Card className="mt-5"><p className="text-xs text-slate-500">Comparisons use the same number of days in previous months, so a part-month isn't compared with a full month. Projections are simple averages and are labelled as such.</p></Card>
     </>

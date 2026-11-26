@@ -99,9 +99,9 @@ export default function SimulatorPage() {
             {warnings.length > 0 && <ul className="mt-3 space-y-1">{warnings.map((w) => <li key={w} className="flex gap-1.5 text-sm text-warn"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{w}</li>)}</ul>}
           </Card>
           <Card title="Comparison">
-            <ResponsiveContainer width="100%" height={220}><BarChart data={[{ n: 'Income', b: before.income, a: after.income }, { n: 'Expenses', b: before.expenses, a: after.expenses }, { n: 'Debts', b: before.debt, a: after.debt }, { n: 'Cash flow', b: before.cashFlow, a: after.cashFlow }, { n: 'Savings left', b: before.savingsCapacity, a: after.savingsCapacity }]}>
+            <div role="img" aria-label="Chart – the same figures are listed in the cards and tables on this page"><div aria-hidden="true"><ResponsiveContainer width="100%" height={220}><BarChart data={[{ n: 'Income', b: before.income, a: after.income }, { n: 'Expenses', b: before.expenses, a: after.expenses }, { n: 'Debts', b: before.debt, a: after.debt }, { n: 'Cash flow', b: before.cashFlow, a: after.cashFlow }, { n: 'Savings left', b: before.savingsCapacity, a: after.savingsCapacity }]}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="n" fontSize={11} /><YAxis fontSize={11} width={45} tickFormatter={(v) => `${(v / 100000).toFixed(1)}k`} /><Tooltip formatter={(v: number) => rm(v)} /><Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="b" name="Before" fill="#94a3b8" isAnimationActive={false} /><Bar dataKey="a" name="After" fill="#0f766e" isAnimationActive={false} /></BarChart></ResponsiveContainer>
+              <Bar dataKey="b" name="Before" fill="#94a3b8" isAnimationActive={false} /><Bar dataKey="a" name="After" fill="#0f766e" isAnimationActive={false} /></BarChart></ResponsiveContainer></div></div>
           </Card>
         </div>
       </div>

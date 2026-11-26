@@ -48,9 +48,10 @@ export async function deleteCommitment(id: string) {
  */
 export async function generateOccurrences(today = todayKL()) {
   const horizon = addDays(today, OCC_HORIZON_DAYS);
-  await db.transaction('rw', db.commitments, db.occurrences, db.transactions, async () => {
-    const [comms, existing, txns] = await Promise.all([db.commitments.toArray(), db.occurrences.toArray(), db.transactions.toArray()]);
-    const paid = paymentsByOccurrence(txns);
+  // Payments are read outside the write transaction so the (possibly large) transactions table is never write-locked here.
+  const paid = paymentsByOccurrence(await db.transactions.filter((t) => t.related?.some((r) => r.kind === 'occurrence')).toArray());
+  await db.transaction('rw', db.commitments, db.occurrences, async () => {
+    const [comms, existing] = await Promise.all([db.commitments.toArray(), db.occurrences.toArray()]);
     const byC = new Map<string, Occurrence[]>();
     for (const o of existing) { const a = byC.get(o.commitmentId) ?? []; a.push(o); byC.set(o.commitmentId, a); }
     const add: Occurrence[] = [], upd: Occurrence[] = [], del: string[] = [];

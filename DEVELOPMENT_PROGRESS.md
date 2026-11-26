@@ -111,7 +111,20 @@ Legend: [x] done & tested · [~] partial · [ ] not started
 - [x] Tests: 54 automated + 1 PostgreSQL integration test; 20 SQL security checks on real PostgreSQL 16 (RLS isolation, LWW, tombstones, anon lockout, storage folders, bucket private); Playwright: v1→v6 upgrade with snapshot, ZIP backup → restore on a fresh device (records + receipt image), CSV import, config validation & error handling, manifest, offline navigation; smoke test 88 cold loads
 - [x] Bugs found & fixed: sync echo overwrote local edits / resurrected deletes; fresh device's defaults could override cloud settings; CSV decimal commas read as thousands; pre-upgrade snapshot raced the upgrade
 
-## Phase 7 – Full testing, security review, bug fixes
+## Phase 7 – Testing, security, bug fixes ✅
+- [x] Dependency audit: production vulnerabilities 7 → **0** (fflate ZIP infinite loop, jsPDF, React Router open redirects → v7, supabase-js); remaining dev-only advisories documented in SECURITY.md
+- [x] Strict Content-Security-Policy (no inline scripts, no `unsafe-eval`); inline theme script moved to a file; verified OCR/PDF/camera/exports run with zero CSP violations
+- [x] HEIC converter isolated in a sandboxed iframe (opaque origin, own CSP) – fixes a silent hang under CSP; Safari uses native decoding; 45 s timeout
+- [x] Hardening: ZIP-bomb limits before decompression, path whitelist; per-record schema validation for restores and cloud pulls; DB-stored links sanitised (`safeLink`); privileged Supabase keys rejected
+- [x] Deployment configs with security headers + SPA fallback: `public/_headers` (Netlify/Cloudflare), `vercel.json`, `netlify.toml`
+- [x] Accessibility (axe-core, WCAG 2.1 A/AA): ~680 failing elements → **0** on 20 pages × light/dark (contrast-verified colour tokens, named progress bars, no nested controls, labelled charts, bell label); dialogs: focus moves in, Tab trapped, Escape closes topmost, focus restored
+- [x] Randomised financial invariants: 300 generated ledgers – balances, net worth, cash flow, category/needs-wants totals, daily totals, monthly-vs-yearly reports always reconcile in integer sen
+- [x] Timezone independence: dates correct under UTC, America/Los_Angeles, Pacific/Kiritimati, Asia/Kuala_Lumpur
+- [x] Performance: shared live queries (one IndexedDB read per table per change) + generators no longer write-lock transactions → page loads −36% at 10k transactions; in-app navigation 44–307 ms at 50k
+- [x] Mobile: no horizontal overflow on all 22 pages at 390 px (fixed /account)
+- [x] Browser suites moved into the repo (`e2e/`, `npm run test:e2e`); coverage measured (domain logic 95.6 %, sync engine 98.9 %)
+- [x] Docs: SECURITY.md, TESTING_SUMMARY.md, USER_GUIDE.md
+
 
 ## Not yet verified / needs external configuration
 - **Supabase cloud sync was not run against a hosted Supabase project** (no credentials in the dev environment). The SQL was tested on PostgreSQL 16 with a Supabase-compatible shim, and the sync engine was tested end-to-end against that database. The Supabase JS transport, Auth emails/redirects and Storage uploads need one real run (see README → Cloud sync).

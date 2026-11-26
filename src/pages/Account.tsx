@@ -28,7 +28,7 @@ export default function AccountPage() {
       <div className="grid items-start gap-4 lg:grid-cols-2">
         {!c.config ? (
           <Card title={<span className="flex items-center gap-2"><CloudOff className="h-4 w-4" />Cloud sync is not set up</span>}>
-            <p className="text-sm text-slate-600 dark:text-slate-400">To sync between your laptop and phone, create a free Supabase project, run <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">supabase/migrations/20261126000000_sync.sql</code>, then enter its URL and <b>anon (public)</b> key. Never use the service-role or secret key.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">To sync between your laptop and phone, create a free Supabase project, run <code className="break-all rounded bg-slate-100 px-1 dark:bg-slate-800">supabase/migrations/20261126000000_sync.sql</code>, then enter its URL and <b>anon (public)</b> key. Never use the service-role or secret key.</p>
             <div className="mt-3 grid gap-3">
               <Field label="Project URL"><Input placeholder="https://xxxx.supabase.co" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
               <Field label="Anon / publishable key"><Input value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" /></Field>

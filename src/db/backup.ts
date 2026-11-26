@@ -2,6 +2,7 @@ import { db, APP_VERSION, SCHEMA_VERSION } from './db';
 import type { Account, Category, Settings, Transaction, SalaryRecord, OTEntry, Commitment, Occurrence, RecurringRule, Budget, Goal, GoalEntry, Task, Attachment, Receipt } from './types';
 import { defaultSettings, defaultSalaryProfile, defaultNotificationPrefs } from './db';
 import { uid } from '@/lib/cn';
+import { checkRecord } from '@/lib/security';
 
 export interface BackupFile {
   app: 'MyFinance'; appVersion: string; schemaVersion: number; exportedAt: string;
@@ -31,8 +32,10 @@ export function validateBackup(o: unknown): { ok: boolean; errors: string[]; fil
     for (const t of TABLES) if (f.data[t] != null && !Array.isArray(f.data[t])) e.push(`Invalid table: ${t}`);
     const idOk = (r: { id?: unknown }) => typeof r.id === 'string' && r.id.length > 0;
     for (const t of TABLES) if (!((f.data[t] ?? []) as { id?: unknown }[]).every(idOk)) e.push(`Invalid record IDs in ${t}.`);
-    const bad = f.data.transactions.filter((x) => !Number.isInteger(x.amount) || !/^\d{4}-\d{2}-\d{2}$/.test(x.date));
-    if (bad.length) e.push(`${bad.length} transaction(s) have invalid amount/date.`);
+    for (const t of TABLES) {
+      const bad = ((f.data[t] ?? []) as unknown[]).map((r) => checkRecord(t, r)).filter(Boolean);
+      if (bad.length) e.push(`${bad.length} invalid record(s) in ${t} (e.g. ${bad[0]}).`);
+    }
     const accIds = new Set(f.data.accounts.map((a) => a.id));
     const orphan = f.data.transactions.filter((x) => (x.accountId && !accIds.has(x.accountId)) || (x.toAccountId && !accIds.has(x.toAccountId)));
     if (orphan.length) e.push(`${orphan.length} transaction(s) reference missing accounts.`);
