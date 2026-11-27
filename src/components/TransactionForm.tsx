@@ -89,7 +89,7 @@ export function TransactionForm({ initialType = 'expense', edit, preset, onClose
         ) : <button type="button" onClick={() => setShowOtherTypes(true)} className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">Debt repayment, refund or adjustment…</button>}
       </div>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-        <MoneyInput large autoFocus={!edit} label={t.type === 'adjustment' ? 'Amount (use − to decrease)' : 'Amount'} value={amount} onChange={setAmount} allowNegative={t.type === 'adjustment'} />
+        <MoneyInput large label={t.type === 'adjustment' ? 'Amount (use − to decrease)' : 'Amount'} value={amount} onChange={setAmount} allowNegative={t.type === 'adjustment'} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t.type === 'income' || t.type === 'refund' || t.type === 'adjustment' ? 'Into account' : 'From account'}
             error={beforeOpening ? `Date is before this account's opening date (${fmtDate(acc!.openingDate)}); it won't affect the balance.` : undefined}>

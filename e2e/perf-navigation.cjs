@@ -7,6 +7,6 @@ const { chromium } = require('playwright');
     tx.oncomplete = () => { db.close(); res(); }; }; }), N);
   await p.goto('http://localhost:4173/'); await p.waitForSelector('text=Safe to spend today', { timeout: 60000 }); await p.waitForTimeout(2000);
   const res = {};
-  for (const [label, sel] of [['Transactions', 'text=/\\d+ transactions?/'], ['Budget', 'text=Category budgets'], ['Reports', 'text=Expenses by category'], ['Insights', 'text=Based only on'], ['Calendar', 'text=Mon'], ['Home', 'text=Safe to spend today']]) {
-    const t0 = Date.now(); await p.click(`aside a:text-is("${label}")`); await p.waitForSelector(sel, { timeout: 60000 }); res[label] = Date.now() - t0; }
+  for (const [label, sel] of [['/transactions', 'text=/\\d+ transactions?/'], ['/budget', 'text=Category budgets'], ['/reports', 'text=Expenses by category'], ['/insights', 'text=Based only on'], ['/calendar', 'text=Mon'], ['/', 'text=Safe to spend today']]) {
+    const t0 = Date.now(); await p.click(`aside a[href="${label}"]`); await p.waitForSelector(sel, { timeout: 60000 }); res[label] = Date.now() - t0; }
   console.log(`N=${N} in-app navigation (ms):`, JSON.stringify(res)); await b.close(); })();

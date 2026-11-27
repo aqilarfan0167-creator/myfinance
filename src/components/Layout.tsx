@@ -43,7 +43,7 @@ function SideLink({ n }: { n: NavItem }) {
 /** One "New" button instead of many quick actions. */
 function NewMenu({ compact }: { compact?: boolean }) {
   const t = useT(); const { openTxn } = useUI(); const nav = useNavigate();
-  const [open, setOpen] = useState(false); const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false); const ref = useRef<HTMLDivElement>(null); const btn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent | KeyboardEvent) => { if (e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -58,14 +58,14 @@ function NewMenu({ compact }: { compact?: boolean }) {
   ];
   return (
     <div className="relative" ref={ref}>
-      <button aria-label={t('New')} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}
+      <button ref={btn} aria-label={t('New')} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}
         className={cn('inline-flex items-center gap-1.5 rounded-xl bg-teal-700 font-semibold text-white shadow-sm transition hover:bg-teal-800 dark:bg-teal-300 dark:text-slate-950 dark:hover:bg-teal-200', compact ? 'p-2' : 'px-3.5 py-2 text-sm')}>
         <Plus className="h-4 w-4" strokeWidth={2.5} />{!compact && t('New')}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           {items.map((it) => (
-            <button key={it.label} role="menuitem" onClick={() => { setOpen(false); it.run(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-800 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800">
+            <button key={it.label} role="menuitem" onClick={() => { setOpen(false); btn.current?.focus(); it.run(); }} /* focus returns to “New” when the dialog closes */ className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-800 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800">
               <it.icon className="h-4 w-4 text-slate-500" />{it.label}
             </button>))}
         </div>)}

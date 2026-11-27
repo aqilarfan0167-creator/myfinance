@@ -20,8 +20,8 @@ const { chromium } = require('playwright');
   await p.locator('[role=dialog] select').nth(1).selectOption('exp-food');
   await p.click('[role=dialog] button[type=submit]');
   await p.waitForSelector('text=Transaction saved');
-  const total = await p.locator('text=Total Balance').locator('..').innerText();
-  console.log('TOTAL:', total.replace(/\n/g, ' | '));
+  const total = await p.locator('text=Available now').locator('..').innerText();
+  console.log('AVAILABLE:', total.replace(/\n/g, ' | '));
   // duplicate warning
   await p.locator('header button[aria-label="New"] >> visible=true').click().then(() => p.click('[role=menuitem]:has-text("Add Expense")'));
   await p.locator('[role=dialog] input[inputmode=decimal]').first().fill('12.50');
