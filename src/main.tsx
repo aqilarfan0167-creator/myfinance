@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import '@fontsource-variable/plus-jakarta-sans';
 import './index.css';
 import { db, requestPersistence } from './db/db';
 import { snapshotBeforeUpgrade } from './db/preUpgrade';

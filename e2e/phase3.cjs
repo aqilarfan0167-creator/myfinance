@@ -39,7 +39,7 @@ const { chromium } = require('playwright');
   await p.goto(U + '/tasks'); await p.waitForSelector('text=Overdue');
   await p.locator('input[type=checkbox][aria-label^="Complete Renew"]').click(); await p.waitForSelector("text=next one scheduled"); console.log('recurring task OK');
   // Dashboard allowance
-  await p.goto(U + '/'); await p.waitForSelector('text=Remaining Budget'); await p.click('text=Daily Allowance'); await p.waitForTimeout(300);
+  await p.goto(U + '/'); await p.waitForSelector('text=Where your money went'); await p.click('button:has-text("How?")'); await p.waitForTimeout(300);
   console.log('allowance:', (await p.locator('[role=dialog]').innerText()).replace(/\n/g, ' | ').slice(0, 520));
   await p.keyboard.press('Escape'); await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-dash3.png'), fullPage: true });
   await p.goto(U + '/calendar'); await p.waitForSelector('text=Goal targets');

@@ -25,19 +25,19 @@ const { chromium } = require('playwright');
   await p.locator('[role=dialog] input[inputmode=decimal]').first().fill('150');
   await p.click('[role=dialog] button:has-text("Save")'); await p.waitForSelector('text=Commitment saved'); console.log('commitment add OK');
   // recurring via txn form
-  await p.click('header >> text=Add Expense');
+  await p.locator('header button[aria-label="New"] >> visible=true').click().then(() => p.click('[role=menuitem]:has-text("Add Expense")'));
   await p.locator('[role=dialog] input[inputmode=decimal]').first().fill('45.90');
   await p.locator('[role=dialog] select').nth(0).selectOption({ index: 1 });
   await p.fill('[role=dialog] input[list=mf-merchants]', 'Spotify');
   await p.locator('[role=dialog] select').nth(1).selectOption('exp-subscriptions');
-  await p.check('text=Repeat this transaction');
+  await p.click('[role=dialog] button:has-text("More details")'); await p.check('text=Repeat this transaction');
   await p.click('[role=dialog] button[type=submit]'); await p.waitForSelector('text=Recurring transaction created'); console.log('recurring via form OK');
   await p.goto(U + '/commitments'); await p.click('text=/Recurring transactions/'); await p.waitForSelector('text=Spotify');
   // Calendar
   await p.goto(U + '/calendar'); await p.waitForSelector('text=Mon'); await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-calendar.png'), fullPage: true });
   await p.click('text=Week'); await p.waitForTimeout(200); await p.click('[role=tab]:has-text("Day")');
   // Dashboard
-  await p.goto(U + '/'); await p.waitForSelector('text=Commitments paid'); await p.click('text=Daily Allowance'); await p.waitForTimeout(300);
+  await p.goto(U + '/'); await p.waitForSelector('text=Coming up'); await p.click('button:has-text("How?")'); await p.waitForTimeout(300);
   await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-allowance.png') });
   console.log('allowance modal:', (await p.locator('[role=dialog]').innerText()).replace(/\n/g, ' | ').slice(0, 400));
   await p.keyboard.press('Escape');

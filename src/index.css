@@ -4,7 +4,9 @@
 
 :root { color-scheme: light; }
 .dark { color-scheme: dark; }
-body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { -webkit-tap-highlight-color: transparent; font-feature-settings: 'ss01'; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { letter-spacing: -0.015em; }
+.tabular-nums, .num { font-variant-numeric: tabular-nums; }
 .recharts-text { fill: currentColor; }
 .dark .recharts-cartesian-axis-tick-value { fill: #94a3b8; }
 .dark .recharts-default-tooltip { background: #0f172a !important; border-color: #334155 !important; }
@@ -16,10 +18,10 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
   section, .break-inside-avoid { break-inside: avoid; box-shadow: none !important; }
 }
 
-/* Accessible text colours – WCAG 2.1 AA (≥ 4.5:1) on every background they appear on (verified with axe-core).
-   Fills (bars, dots, buttons) keep the brand palette; only text is adjusted. */
-.text-slate-400, .text-slate-500 { color: #526076; }
-.text-income { color: #15803d; } .text-expense { color: #b91c1c; } .text-warn { color: #c2410c; } .text-transfer { color: #1d4ed8; } .text-saving { color: #7e22ce; }
-.dark .text-slate-400, .dark .text-slate-500 { color: #a3aebf; }
-.dark .text-income { color: #4ade80; } .dark .text-expense { color: #f87171; } .dark .text-warn { color: #fb923c; } .dark .text-transfer { color: #60a5fa; } .dark .text-saving { color: #c084fc; }
+/* Accessible text colours – WCAG 2.1 AA (≥ 4.5:1) on every surface they appear on (verified with axe-core).
+   Fills keep the palette; only text is adjusted. */
+.text-slate-400, .text-slate-500 { color: #6b675e; }
+.text-income { color: #126f33; } .text-expense { color: #b42318; } .text-warn { color: #b93c0b; } .text-transfer { color: #3451c7; } .text-saving { color: #6d3fc0; }
+.dark .text-slate-400, .dark .text-slate-500 { color: #aaa69c; }
+.dark .text-income { color: #4ade80; } .dark .text-expense { color: #f4847c; } .dark .text-warn { color: #fb923c; } .dark .text-transfer { color: #8ea4f5; } .dark .text-saving { color: #c3a6f4; }
 .sr-only-focusable:focus { position: static; width: auto; height: auto; clip: auto; }

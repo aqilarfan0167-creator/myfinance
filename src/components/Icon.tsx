@@ -13,5 +13,5 @@ export function Icon({ name, className, color }: { name: string; className?: str
   return <I className={className ?? 'h-4 w-4'} style={color ? { color } : undefined} />;
 }
 export function IconBadge({ name, color }: { name: string; color: string }) {
-  return <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: color + '22' }}><Icon name={name} color={color} /></span>;
+  return <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: color + '1f' }}><Icon name={name} color={color} /></span>;
 }

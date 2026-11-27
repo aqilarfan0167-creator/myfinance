@@ -78,7 +78,7 @@ const FX = require('path').join(__dirname, '../src/__tests__/fixtures/');
   // 5. Library: delete a recorded receipt keeps its transaction
   await p.goto(U + '/receipts'); await p.waitForSelector('text=Receipts (');
   await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-library.png'), fullPage: true });
-  const txCount = async () => { await p.goto(U + '/expenses'); await p.waitForTimeout(500); return (await p.locator('main').innerText()).match(/(\d+) record\(s\)/)[1]; };
+  const txCount = async () => { await p.goto(U + '/expenses'); await p.waitForTimeout(500); return (await p.locator('main').innerText()).match(/(\d+) transactions?/)[1]; };
   const c1 = await txCount();
   await p.goto(U + '/receipts'); await p.fill('input[placeholder^="Search merchant"]', 'SHELL'); await p.click('button[aria-label=Delete]'); await p.click('[role=dialog] button:has-text("Delete")'); await p.waitForSelector('text=Receipt deleted');
   console.log('expenses before/after deleting receipt:', c1, await txCount());

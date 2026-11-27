@@ -5,13 +5,13 @@ import { centsToInput, parseRM } from '@/lib/money';
 import { fmtDate, parseDMY } from '@/lib/date';
 
 /** Money input that emits integer cents (null while invalid). */
-export function MoneyInput({ value, onChange, allowNegative, id, placeholder = '0.00' }: { value: number | null; onChange: (c: number | null) => void; allowNegative?: boolean; id?: string; placeholder?: string }) {
+export function MoneyInput({ value, onChange, allowNegative, id, placeholder = '0.00', large, autoFocus, label }: { value: number | null; onChange: (c: number | null) => void; allowNegative?: boolean; id?: string; placeholder?: string; large?: boolean; autoFocus?: boolean; label?: string }) {
   const [text, setText] = useState(value ? centsToInput(value) : '');
   useEffect(() => { if (value !== parseRM(text)) setText(value ? centsToInput(value) : ''); /* external change */ }, [value]); // eslint-disable-line
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">RM</span>
-      <Input id={id} inputMode="decimal" className="pl-10 text-right tabular-nums" placeholder={placeholder} value={text}
+      <span className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 ${large ? 'text-lg font-semibold' : 'text-sm'}`}>RM</span>
+      <Input id={id} inputMode="decimal" autoFocus={autoFocus} aria-label={label} className={`tabular-nums ${large ? '!py-3.5 !pl-14 !text-3xl font-bold tracking-tight text-left' : 'pl-10 text-right'}`} placeholder={placeholder} value={text}
         onChange={(e) => { const v = e.target.value; setText(v); const c = parseRM(v); onChange(c != null && (allowNegative || c >= 0) ? c : null); }}
         onBlur={() => { const c = parseRM(text); if (c != null) setText(centsToInput(c)); }} />
     </div>

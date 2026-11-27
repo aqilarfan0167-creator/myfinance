@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
   await p.click('button[type=submit]:has-text("Save")');
   await p.waitForSelector('text=Account created');
   // add expense
-  await p.click('header >> text=Add Expense');
+  await p.locator('header button[aria-label="New"] >> visible=true').click().then(() => p.click('[role=menuitem]:has-text("Add Expense")'));
   await p.locator('[role=dialog] input[inputmode=decimal]').first().fill('12.50');
   await p.locator('[role=dialog] select').nth(0).selectOption({ index: 1 });
   await p.fill('[role=dialog] input[list=mf-merchants]', 'Mamak');
@@ -23,7 +23,7 @@ const { chromium } = require('playwright');
   const total = await p.locator('text=Total Balance').locator('..').innerText();
   console.log('TOTAL:', total.replace(/\n/g, ' | '));
   // duplicate warning
-  await p.click('header >> text=Add Expense');
+  await p.locator('header button[aria-label="New"] >> visible=true').click().then(() => p.click('[role=menuitem]:has-text("Add Expense")'));
   await p.locator('[role=dialog] input[inputmode=decimal]').first().fill('12.50');
   await p.locator('[role=dialog] select').nth(0).selectOption({ index: 1 });
   await p.fill('[role=dialog] input[list=mf-merchants]', 'Mamak');
@@ -34,7 +34,7 @@ const { chromium } = require('playwright');
   await p.click('text=Review'); await p.click('[role=dialog] button:has-text("Cancel")');
   // demo
   await p.goto('http://localhost:4173/settings'); await p.click('text=Load demo data'); await p.waitForSelector('text=Remove demo data', { timeout: 20000 });
-  await p.goto('http://localhost:4173/'); await p.waitForSelector('text=Income vs Expenses'); await p.waitForTimeout(800);
+  await p.goto('http://localhost:4173/'); await p.waitForSelector('text=Safe to spend today'); await p.waitForTimeout(800);
   await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-dash-desktop.png'), fullPage: true });
   await p.goto('http://localhost:4173/accounts'); await p.waitForTimeout(500); await p.screenshot({ path: require('path').join(require('os').tmpdir(), 'mf-accounts.png'), fullPage: true });
   await p.goto('http://localhost:4173/transactions'); await p.waitForTimeout(500);
